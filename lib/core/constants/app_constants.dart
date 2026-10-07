@@ -6,10 +6,12 @@ class AppConstants {
   static const String subtitle =
       'Practice verified academic test questions. Test your understanding under strict simulated exam conditions.';
 
-  // Supabase production configuration (matching existing web application)
-  static const String supabaseUrl = 'https://kbebriigrnkgzzzsqymk.supabase.co';
+  // Supabase production configuration
+  static const String supabaseUrl = 'https://xsqejhevjwbnninnzrha.supabase.co';
   static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWJyaWlncm5rZ3p6enNxeW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NTI0NjksImV4cCI6MjEwNTIyODQ2OX0.9CBS8W5yGpWoHCssRR6uGFCMQR19ZlDes6Pa5DAPZzU';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzcWVqaGV2andibm5pbm56cmhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzODE1MzEsImV4cCI6MjEwNjk1NzUzMX0.gvXVdABZWf9QgmxYlxdCF4EkhGK2Df4Hm-a-1_FPzCY';
+  static const String supabasePublishableKey =
+      'sb_publishable_dJrR27QgsdQzWJNamPVgOQ_yfqFLUEp';
 
   // Shared preferences keys
   static const String keyUserSession = 'prep_studylab_auth_user_v2';

@@ -20,7 +20,7 @@ import 'package:prep_study_lab/screens/auth_modal.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase with the EXISTING production Supabase database
+  // Initialize Supabase with the production Supabase database
   await Supabase.initialize(
     url: AppConstants.supabaseUrl,
     anonKey: AppConstants.supabaseAnonKey,
