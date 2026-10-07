@@ -196,15 +196,10 @@ class AuthService extends ChangeNotifier {
         return {'success': true, 'user': newUser};
       }
     } on AuthException catch (e) {
-      if (e.message.contains('User already registered') || e.statusCode == '422') {
-        // If already registered, attempt login
-        final loginRes = await login(cleanReg, password);
-        if (loginRes['success'] == true) {
-          return loginRes;
-        }
+      if (e.message.toLowerCase().contains('already registered') || e.statusCode == '422') {
         return {
           'success': false,
-          'error': 'An account for registration number $cleanReg already exists. Please sign in with your password.'
+          'error': 'An account with registration number $cleanReg already exists. Please sign in with your password.'
         };
       }
       return {'success': false, 'error': e.message};
@@ -277,32 +272,11 @@ class AuthService extends ChangeNotifier {
         return {'success': true, 'user': authUser};
       }
     } on AuthException catch (e) {
-      if (!isEmail) {
-        // Auto sign-up if first time logging in
-        try {
-          final signUpRes = await _supabase.auth.signUp(
-            email: emailToUse,
-            password: password,
-            data: {'regNumber': cleanReg, 'name': cleanReg, 'role': 'student'},
-          );
-          if (signUpRes.user != null) {
-            final newUser = UserModel(
-              id: signUpRes.user!.id,
-              name: cleanReg,
-              regNumber: cleanReg,
-              email: emailToUse,
-              role: 'student',
-              status: 'active',
-              createdAt: signUpRes.user!.createdAt,
-            );
-            _currentUser = newUser;
-            await _saveUserToPrefs(newUser);
-            notifyListeners();
-            return {'success': true, 'user': newUser};
-          }
-        } catch (_) {
-          return {'success': false, 'error': 'Incorrect password for registration number $cleanReg. Please check your credentials.'};
-        }
+      if (e.message.toLowerCase().contains('invalid login credentials')) {
+        return {
+          'success': false,
+          'error': 'Incorrect password or registration number. Please check your credentials.'
+        };
       }
       return {'success': false, 'error': e.message};
     } catch (e) {
