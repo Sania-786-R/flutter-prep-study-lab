@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
@@ -84,8 +85,17 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
   void _listenToAuthChanges() {
-    _supabase.auth.onAuthStateChange.listen((data) async {
+    _authSubscription?.cancel();
+    _authSubscription = _supabase.auth.onAuthStateChange.listen((data) async {
       final event = data.event;
       final session = data.session;
 
@@ -106,8 +116,8 @@ class AuthService extends ChangeNotifier {
             }
           } catch (_) {}
 
-          final identifier = user.userMetadata?['regNumber'] ??
-              user.userMetadata?['name'] ??
+          final identifier = user.userMetadata?['name'] ??
+              user.userMetadata?['regNumber'] ??
               (user.email != null ? user.email!.split('@').first : 'Student');
 
           _currentUser = UserModel(
@@ -123,10 +133,12 @@ class AuthService extends ChangeNotifier {
           notifyListeners();
         }
       } else if (event == AuthChangeEvent.signedOut) {
-        _currentUser = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(AppConstants.keyUserSession);
-        notifyListeners();
+        if (_currentUser?.id != 'adm_primary_root') {
+          _currentUser = null;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove(AppConstants.keyUserSession);
+          notifyListeners();
+        }
       }
     });
   }
@@ -182,16 +194,26 @@ class AuthService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  // Student registration with Registration Number and Password
+  // Generate deterministic internal email for Supabase Auth
+  static String toInternalEmail(String identifier) {
+    final clean = identifier.trim();
+    if (clean.contains('@')) {
+      return clean.toLowerCase();
+    }
+    final safeLocal = clean.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return '$safeLocal@prepstudylab.com';
+  }
+
+  // Student registration with flexible identifier and Password
   Future<Map<String, dynamic>> register(
       String regNumber, String password, String confirmPassword) async {
-    final cleanReg = regNumber.trim().toUpperCase();
+    final cleanReg = regNumber.trim();
 
     if (cleanReg.isEmpty) {
-      return {'success': false, 'error': 'Please enter your registration number.'};
+      return {'success': false, 'error': 'Please enter your Name or Registration Number.'};
     }
-    if (cleanReg.length < 3) {
-      return {'success': false, 'error': 'Registration number must be at least 3 characters.'};
+    if (cleanReg.length < 2) {
+      return {'success': false, 'error': 'Registration identifier must be at least 2 characters.'};
     }
     if (password.length < 6) {
       return {'success': false, 'error': 'Password must be at least 6 characters.'};
@@ -200,30 +222,31 @@ class AuthService extends ChangeNotifier {
       return {'success': false, 'error': 'Passwords do not match.'};
     }
 
+    final sanitizedEmail = toInternalEmail(cleanReg);
+    if (sanitizedEmail == '@prepstudylab.com') {
+      return {'success': false, 'error': 'Please enter a valid Name or Registration Number with letters or numbers.'};
+    }
+
     // Check if account already exists in local accounts storage
     final localUsers = await _getLocalUsers();
     final existingLocal = localUsers.firstWhere(
       (u) =>
-          (u['regNumber'] != null && u['regNumber'].toString().toUpperCase() == cleanReg) ||
-          (u['name'] != null && u['name'].toString().toUpperCase() == cleanReg),
+          (u['regNumber'] != null && u['regNumber'].toString().toLowerCase() == cleanReg.toLowerCase()) ||
+          (u['name'] != null && u['name'].toString().toLowerCase() == cleanReg.toLowerCase()) ||
+          (u['email'] != null && u['email'].toString().toLowerCase() == sanitizedEmail.toLowerCase()),
       orElse: () => {},
     );
     if (existingLocal.isNotEmpty) {
       return {
         'success': false,
-        'error': 'An account with registration number $cleanReg already exists. Please sign in with your password.'
+        'error': 'Account already exists. Please sign in.'
       };
     }
 
-    final isEmail = cleanReg.contains('@');
-    final sanitizedEmail = isEmail
-        ? cleanReg.toLowerCase()
-        : '${cleanReg.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}@prepstudylab.com';
-
-    String userId = 'std_${DateTime.now().millisecondsSinceEpoch}_${cleanReg.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}';
+    String userId = '';
     String createdAt = DateTime.now().toIso8601String();
 
-    // 1. Attempt Supabase Auth registration
+    // 1. Supabase Auth registration
     try {
       final response = await _supabase.auth.signUp(
         email: sanitizedEmail,
@@ -234,6 +257,7 @@ class AuthService extends ChangeNotifier {
       if (response.user != null) {
         userId = response.user!.id;
         createdAt = response.user!.createdAt;
+
         try {
           await _supabase.from('user_roles').insert({'user_id': response.user!.id, 'role': 'student'});
         } catch (_) {}
@@ -243,20 +267,37 @@ class AuthService extends ChangeNotifier {
             await _supabase.auth.signInWithPassword(email: sanitizedEmail, password: password);
           } catch (_) {}
         }
+      } else {
+        return {'success': false, 'error': 'Failed to create account. Please try again.'};
       }
     } on AuthException catch (e) {
-      if (e.message.toLowerCase().contains('already registered') || e.statusCode == '422') {
+      if (e.statusCode == '422' ||
+          e.code == 'user_already_exists' ||
+          e.message.toLowerCase().contains('already registered') ||
+          e.message.toLowerCase().contains('already exists')) {
         return {
           'success': false,
-          'error': 'An account with registration number $cleanReg already exists. Please sign in with your password.'
+          'error': 'Account already exists. Please sign in.'
         };
       }
-      debugPrint('Supabase signup notice (falling back to secure local account): ${e.message}');
+      if (e.message.toLowerCase().contains('rate limit')) {
+        return {
+          'success': false,
+          'error': 'Rate limit exceeded. Please try again later.'
+        };
+      }
+      return {'success': false, 'error': e.message};
     } catch (e) {
-      debugPrint('Supabase signup network notice: $e');
+      if (e.toString().toLowerCase().contains('network') ||
+          e.toString().toLowerCase().contains('socket') ||
+          e.toString().toLowerCase().contains('failed host lookup') ||
+          e.toString().toLowerCase().contains('connection')) {
+        return {'success': false, 'error': 'Network error. Please check your internet connection.'};
+      }
+      return {'success': false, 'error': 'Authentication service unavailable. Please try again.'};
     }
 
-    // 2. Persist student credentials securely with salted SHA-256 hash
+    // 2. Persist student credentials cache securely with salted SHA-256 hash
     final salt = DateTime.now().microsecondsSinceEpoch.toString();
     final passwordHash = hashPassword(password, salt);
 
@@ -282,7 +323,10 @@ class AuthService extends ChangeNotifier {
       'createdAt': createdAt,
     };
 
-    localUsers.removeWhere((u) => u['id'] == userId || u['regNumber']?.toString().toUpperCase() == cleanReg);
+    localUsers.removeWhere((u) =>
+        u['id'] == userId ||
+        u['regNumber']?.toString().toLowerCase() == cleanReg.toLowerCase() ||
+        u['name']?.toString().toLowerCase() == cleanReg.toLowerCase());
     localUsers.add(newRecord);
     await _saveLocalUsers(localUsers);
 
@@ -293,24 +337,20 @@ class AuthService extends ChangeNotifier {
     return {'success': true, 'user': newUser};
   }
 
-  // Unified login by Registration Number or Email
+  // Unified login by Name, Registration Number, or Email
   Future<Map<String, dynamic>> login(String regNumberOrEmail, String password) async {
     final cleanInput = regNumberOrEmail.trim();
     if (cleanInput.isEmpty || password.isEmpty) {
-      return {'success': false, 'error': 'Please enter your registration number and password.'};
+      return {'success': false, 'error': 'Please enter your Name or Registration Number and password.'};
     }
     if (password.length < 6) {
       return {'success': false, 'error': 'Password must be at least 6 characters.'};
     }
 
-    final isEmail = cleanInput.contains('@');
-    final cleanReg = isEmail ? cleanInput : cleanInput.toUpperCase();
-    final emailToUse = isEmail
-        ? cleanInput.toLowerCase()
-        : '${cleanInput.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}@prepstudylab.com';
+    final emailToUse = toInternalEmail(cleanInput);
 
     // Administrator master credentials
-    if (cleanReg == 'ADMIN' && (password == 'admin123' || password == 'Admin@12345' || password == 'admin@123')) {
+    if (cleanInput.toUpperCase() == 'ADMIN' && (password == 'admin123' || password == 'Admin@12345' || password == 'admin@123')) {
       final adminUser = UserModel(
         id: 'adm_primary_root',
         name: 'Administrator',
@@ -326,7 +366,7 @@ class AuthService extends ChangeNotifier {
       return {'success': true, 'user': adminUser};
     }
 
-    // 1. Try Supabase Auth first
+    // 1. Try Supabase Auth
     try {
       final response = await _supabase.auth.signInWithPassword(
         email: emailToUse,
@@ -334,7 +374,7 @@ class AuthService extends ChangeNotifier {
       );
 
       if (response.user != null) {
-        final isAdminLogin = cleanReg == 'ADMIN' ||
+        final isAdminLogin = cleanInput.toUpperCase() == 'ADMIN' ||
             cleanInput.toLowerCase().contains('admin') ||
             (response.user!.email?.toLowerCase().contains('admin') ?? false);
         String role = isAdminLogin ? 'admin' : 'student';
@@ -353,9 +393,9 @@ class AuthService extends ChangeNotifier {
           }
         } catch (_) {}
 
-        final identifier = response.user!.userMetadata?['regNumber'] ??
-            response.user!.userMetadata?['name'] ??
-            cleanReg;
+        final identifier = response.user!.userMetadata?['name'] ??
+            response.user!.userMetadata?['regNumber'] ??
+            cleanInput;
 
         final authUser = UserModel(
           id: response.user!.id,
@@ -374,7 +414,11 @@ class AuthService extends ChangeNotifier {
         final salt = DateTime.now().microsecondsSinceEpoch.toString();
         final passwordHash = hashPassword(password, salt);
         final localUsers = await _getLocalUsers();
-        localUsers.removeWhere((u) => u['id'] == authUser.id || u['regNumber']?.toString().toUpperCase() == cleanReg);
+        localUsers.removeWhere((u) =>
+            u['id'] == authUser.id ||
+            u['regNumber']?.toString().toLowerCase() == cleanInput.toLowerCase() ||
+            u['name']?.toString().toLowerCase() == cleanInput.toLowerCase() ||
+            u['email']?.toString().toLowerCase() == emailToUse.toLowerCase());
         localUsers.add({
           'id': authUser.id,
           'name': authUser.name,
@@ -392,6 +436,9 @@ class AuthService extends ChangeNotifier {
         return {'success': true, 'user': authUser};
       }
     } on AuthException catch (e) {
+      if (!e.message.toLowerCase().contains('invalid login credentials')) {
+        return {'success': false, 'error': e.message};
+      }
       debugPrint('Supabase sign-in notice: ${e.message}');
     } catch (e) {
       debugPrint('Supabase sign-in error: $e');
@@ -403,7 +450,7 @@ class AuthService extends ChangeNotifier {
       (u) =>
           u['name']?.toString().toLowerCase() == cleanInput.toLowerCase() ||
           (u['regNumber'] != null && u['regNumber'].toString().toLowerCase() == cleanInput.toLowerCase()) ||
-          (u['email'] != null && u['email'].toString().toLowerCase() == cleanInput.toLowerCase()),
+          (u['email'] != null && u['email'].toString().toLowerCase() == emailToUse.toLowerCase()),
       orElse: () => {},
     );
 
@@ -420,14 +467,14 @@ class AuthService extends ChangeNotifier {
         if (computedHash != storedHash) {
           return {
             'success': false,
-            'error': 'Incorrect password for registration number $cleanReg. Please check your credentials.'
+            'error': 'Incorrect password. Please check your credentials.'
           };
         }
       }
 
-      final identifier = match['regNumber']?.toString() ?? match['name']?.toString() ?? cleanReg;
+      final identifier = match['name']?.toString() ?? match['regNumber']?.toString() ?? cleanInput;
       final authUser = UserModel(
-        id: match['id']?.toString() ?? 'std_$cleanReg',
+        id: match['id']?.toString() ?? 'std_$cleanInput',
         name: identifier,
         regNumber: match['regNumber']?.toString() ?? (match['role'] == 'student' ? identifier : null),
         email: match['email']?.toString(),
@@ -444,7 +491,7 @@ class AuthService extends ChangeNotifier {
 
     return {
       'success': false,
-      'error': 'No account found for $cleanReg. Please check your credentials or create an account.'
+      'error': 'Incorrect password or identifier. Please check your credentials.'
     };
   }
 

@@ -37,13 +37,43 @@ class _AuthModalState extends State<AuthModal> {
   }
 
   Future<void> _handleSubmit() async {
+    final reg = _regController.text.trim();
+    final pass = _passController.text;
+
+    if (reg.isEmpty) {
+      setState(() {
+        _error = 'Please enter your Name or Registration Number.';
+      });
+      return;
+    }
+
+    if (pass.isEmpty) {
+      setState(() {
+        _error = 'Please enter your password.';
+      });
+      return;
+    }
+
+    if (pass.length < 6) {
+      setState(() {
+        _error = 'Password must be at least 6 characters.';
+      });
+      return;
+    }
+
+    if (_mode == 'signup') {
+      if (pass != _confirmPassController.text) {
+        setState(() {
+          _error = 'Passwords do not match.';
+        });
+        return;
+      }
+    }
+
     setState(() {
       _error = null;
       _isLoading = true;
     });
-
-    final reg = _regController.text.trim();
-    final pass = _passController.text;
 
     Map<String, dynamic> res;
     if (_mode == 'signup') {
@@ -165,13 +195,13 @@ class _AuthModalState extends State<AuthModal> {
                 const SizedBox(height: 14),
               ],
 
-              // Registration number field
+              // Registration number / Name field
               TextField(
                 controller: _regController,
-                textCapitalization: TextCapitalization.characters,
+                textCapitalization: TextCapitalization.none,
                 decoration: InputDecoration(
-                  labelText: 'Registration Number',
-                  hintText: 'e.g. 21BCE1001 or Student ID',
+                  labelText: 'Name or Registration Number',
+                  hintText: 'e.g. HAFI, 2026AIML001, or Student ID',
                   prefixIcon: const Icon(Icons.badge_outlined, size: 20),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                   filled: true,
