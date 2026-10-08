@@ -8,7 +8,7 @@ class HeroView extends StatelessWidget {
   final int totalCourses;
   final int totalQuestions;
   final bool canInstallApp;
-  final VoidCallback onInstallApp;
+  final VoidCallback? onInstallApp;
   final VoidCallback onDownloadApk;
 
   const HeroView({
@@ -18,7 +18,7 @@ class HeroView extends StatelessWidget {
     required this.totalCourses,
     required this.totalQuestions,
     required this.canInstallApp,
-    required this.onInstallApp,
+    this.onInstallApp,
     required this.onDownloadApk,
   });
 
@@ -62,10 +62,10 @@ class HeroView extends StatelessWidget {
                   const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.get_app_rounded, color: AppColors.primary, size: 18),
+                      Icon(Icons.android_rounded, color: AppColors.primary, size: 18),
                       SizedBox(width: 8),
                       Text(
-                        'Install Prep Study Lab App for instant access',
+                        'Download Android App (APK) for instant offline access',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -74,32 +74,19 @@ class HeroView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FilledButton(
-                        onPressed: onInstallApp,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        child: const Text('INSTALL APP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: onDownloadApk,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primaryDark,
-                          visualDensity: VisualDensity.compact,
-                          side: const BorderSide(color: AppColors.primaryLight),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        child: const Text('DOWNLOAD APK', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                  FilledButton.icon(
+                    onPressed: onDownloadApk,
+                    icon: const Icon(Icons.download_rounded, size: 16),
+                    label: const Text(
+                      'DOWNLOAD APK',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
                   ),
                 ],
               ),

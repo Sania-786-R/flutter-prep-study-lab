@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:prep_study_lab/core/constants/app_constants.dart';
+import 'package:prep_study_lab/services/download_helper.dart';
 
 class PwaService extends ChangeNotifier {
   bool _canInstall = false;
@@ -15,7 +15,7 @@ class PwaService extends ChangeNotifier {
 
   void _detectEnvironment() {
     if (kIsWeb) {
-      // In web browser environment, we offer install prompt / APK download options
+      // In web browser environment, we offer APK download banner
       _canInstall = true;
     } else {
       // Running as native Android/iOS app
@@ -32,9 +32,15 @@ class PwaService extends ChangeNotifier {
   }
 
   Future<void> downloadApk() async {
-    final uri = Uri.parse(AppConstants.apkDownloadUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    String url = AppConstants.apkFallbackUrl;
+    if (kIsWeb) {
+      try {
+        final origin = Uri.base.origin;
+        if (origin.isNotEmpty && !origin.startsWith('file:') && !origin.contains('null')) {
+          url = '$origin/prep-study-lab.apk';
+        }
+      } catch (_) {}
     }
+    downloadFile(url, 'prep-study-lab.apk');
   }
 }

@@ -20,7 +20,9 @@ class AppConstants {
   static const String keyCachedAttempts = 'prep_studylab_attempts_v2';
 
   // Release APK download URL
-  static const String apkDownloadUrl = 'https://prepstudylab.com/download/prep-study-lab.apk';
+  static const String apkDownloadUrl = '/prep-study-lab.apk';
+  static const String apkFallbackUrl =
+      'https://flutter-prep-study-lab.vercel.app/prep-study-lab.apk';
 }
 
 class AppColors {
