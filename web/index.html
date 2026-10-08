@@ -19,8 +19,119 @@
   <title>Prep Study Lab</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0284C7">
+
+  <style>
+    body {
+      background-color: #F8FBFF;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #F8FBFF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      transition: opacity 0.35s ease-out;
+    }
+
+    .app-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 28px -6px rgba(2, 132, 199, 0.38);
+      margin-bottom: 22px;
+      animation: icon-float 2.5s ease-in-out infinite;
+    }
+
+    .app-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 2.8px;
+      color: #0284C7;
+      margin-bottom: 6px;
+    }
+
+    .app-tagline {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.4px;
+      color: #64748B;
+      margin-bottom: 26px;
+    }
+
+    .progress-bar {
+      width: 190px;
+      height: 4px;
+      background: #E2E8F0;
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #38BDF8, #0284C7);
+      border-radius: 99px;
+      position: absolute;
+      animation: progress-slide 1.5s infinite ease-in-out;
+    }
+
+    @keyframes progress-slide {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(20%); }
+      100% { transform: translateX(100%); }
+    }
+
+    @keyframes icon-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+  </style>
 </head>
-<body style="background-color: #F8FBFF; margin: 0; padding: 0;">
+<body>
+  <!-- Instant Lightweight HTML/CSS Preloader (Displays in 0ms) -->
+  <div id="loading-screen">
+    <div class="app-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+        <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+      </svg>
+    </div>
+    <div class="app-title">PREP STUDY LAB</div>
+    <div class="app-tagline">ACADEMIC PERFORMANCE SUITE</div>
+    <div class="progress-bar">
+      <div class="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <script>
+    // Remove the preloader smoothly when Flutter paints its first frame
+    window.addEventListener('flutter-first-frame', function() {
+      const loader = document.getElementById('loading-screen');
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(function() {
+          loader.remove();
+        }, 350);
+      }
+    });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

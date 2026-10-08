@@ -77,7 +77,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final auth = context.read<AuthService>();
     final test = context.read<TestService>();
     await auth.initialize();
-    await test.initialize(auth.currentUser?.id);
+    test.initialize(auth.currentUser?.id);
   }
 
   void _showAuthModal({String? reasonMessage, VoidCallback? onAuthenticatedAction}) {

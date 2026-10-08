@@ -75,15 +75,39 @@ class TestService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await loadCourses();
-    await loadQuestions();
-    if (userId != null) {
-      await loadAttempts(userId);
-      await loadActiveSession(userId);
-    }
+    // 1. Instant cache load so UI renders in 1 millisecond
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedCourses = prefs.getString(AppConstants.keyCachedCourses);
+      if (cachedCourses != null) {
+        final List list = jsonDecode(cachedCourses);
+        _courses = list.map((c) => CourseModel.fromJson(Map<String, dynamic>.from(c))).toList();
+      }
+      final cachedQuestions = prefs.getString(AppConstants.keyCachedQuestions);
+      if (cachedQuestions != null) {
+        final List list = jsonDecode(cachedQuestions);
+        _questions = list.map((q) => QuestionModel.fromJson(Map<String, dynamic>.from(q))).toList();
+      }
+      if (_courses.isNotEmpty || _questions.isNotEmpty) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    } catch (_) {}
 
-    _isLoading = false;
-    notifyListeners();
+    // 2. Fetch fresh data concurrently in parallel
+    try {
+      await Future.wait([
+        loadCourses(),
+        loadQuestions(),
+        if (userId != null) loadAttempts(userId),
+        if (userId != null) loadActiveSession(userId),
+      ]);
+    } catch (e) {
+      debugPrint('Notice during test service initialize: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // Fetch published courses directly from Supabase
