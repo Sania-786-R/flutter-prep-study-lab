@@ -4,3 +4,4 @@ export PATH="$PATH:`pwd`/_flutter/bin"
 flutter config --enable-web
 flutter pub get
 flutter build web --release -O4
+cp -f web/prep-study-lab.apk build/web/prep-study-lab.apk || true

@@ -55,7 +55,7 @@ class PrepStudyLabApp extends StatelessWidget {
           PointerDeviceKind.trackpad,
           PointerDeviceKind.stylus,
         },
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       ),
       home: const MainShellScreen(),
     );
@@ -75,6 +75,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   MockAttemptModel? _viewingResultAttempt;
   bool _isStartingTest = false;
   bool _isAuthModalOpen = false;
+  bool _isConfigModalOpen = false;
 
   @override
   void initState() {
@@ -123,6 +124,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _openConfigModal({String? preselectedCourseId}) {
+    if (_isConfigModalOpen) return;
     final auth = context.read<AuthService>();
     if (!auth.isAuthenticated) {
       _showAuthModal(
@@ -133,15 +135,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }
 
     final testService = context.read<TestService>();
+    _isConfigModalOpen = true;
     showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.54),
       builder: (ctx) => MockConfigModal(
         courses: testService.courses,
         preselectedCourseId: preselectedCourseId,
         testService: testService,
         onStartTest: (config) => _startTest(config),
       ),
-    );
+    ).whenComplete(() {
+      _isConfigModalOpen = false;
+    });
   }
 
   Future<void> _startTest(MockConfigModel config) async {

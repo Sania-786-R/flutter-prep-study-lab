@@ -512,8 +512,8 @@ class AuthService extends ChangeNotifier {
     } catch (_) {}
 
     try {
-      await _supabase.auth.signOut(scope: SignOutScope.local).timeout(
-        const Duration(seconds: 3),
+      await _supabase.auth.signOut().timeout(
+        const Duration(seconds: 4),
         onTimeout: () {},
       );
     } catch (e) {
