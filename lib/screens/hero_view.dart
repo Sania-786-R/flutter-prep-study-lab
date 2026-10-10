@@ -38,111 +38,113 @@ class HeroView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Android APK Download Banner (Displayed consistently across mobile web & installed app)
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 680),
-            margin: const EdgeInsets.only(bottom: 24),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                ),
-              ],
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 540;
-                if (isNarrow) {
-                  // Mobile narrow layout (320px - 430px)
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 2.0),
-                            child: Icon(Icons.android_rounded, color: AppColors.primary, size: 20),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Download Android App (APK) for instant offline access',
-                              softWrap: true,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primaryDark,
-                                height: 1.35,
+          // Android APK Download Banner (Only displayed on web browser to let users download the app, hidden inside installed app)
+          if (canInstallApp) ...[
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 680),
+              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 540;
+                  if (isNarrow) {
+                    // Mobile narrow layout (320px - 430px)
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 2.0),
+                              child: Icon(Icons.android_rounded, color: AppColors.primary, size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Download Android App (APK) for instant offline access',
+                                softWrap: true,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryDark,
+                                  height: 1.35,
+                                ),
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Center(
+                          child: FilledButton.icon(
+                            onPressed: onDownloadApk,
+                            icon: const Icon(Icons.download_rounded, size: 16),
+                            label: const Text(
+                              'DOWNLOAD APK',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
                           ),
-                        ],
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Desktop / Wide layout
+                  return Row(
+                    children: [
+                      const Icon(Icons.android_rounded, color: AppColors.primary, size: 22),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Download Android App (APK) for instant offline access',
+                          softWrap: true,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: FilledButton.icon(
-                          onPressed: onDownloadApk,
-                          icon: const Icon(Icons.download_rounded, size: 16),
-                          label: const Text(
-                            'DOWNLOAD APK',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
+                      const SizedBox(width: 16),
+                      FilledButton.icon(
+                        onPressed: onDownloadApk,
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text(
+                          'DOWNLOAD APK',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                       ),
                     ],
                   );
-                }
-
-                // Desktop / Wide layout
-                return Row(
-                  children: [
-                    const Icon(Icons.android_rounded, color: AppColors.primary, size: 22),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Download Android App (APK) for instant offline access',
-                        softWrap: true,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    FilledButton.icon(
-                      onPressed: onDownloadApk,
-                      icon: const Icon(Icons.download_rounded, size: 16),
-                      label: const Text(
-                        'DOWNLOAD APK',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                },
+              ),
             ),
-          ),
+          ],
 
           // Brand Pill
           Container(

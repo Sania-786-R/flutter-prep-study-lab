@@ -12,7 +12,10 @@ void downloadFile(String url, String fileName) {
 
 bool isStandaloneMode() {
   try {
-    return html.window.matchMedia('(display-mode: standalone)').matches;
+    final isMatchMedia = html.window.matchMedia('(display-mode: standalone)').matches;
+    final isNavStandalone = (html.window.navigator as dynamic).standalone == true;
+    final isAndroidAppReferrer = html.document.referrer.startsWith('android-app://');
+    return isMatchMedia || isNavStandalone || isAndroidAppReferrer;
   } catch (_) {
     return false;
   }
