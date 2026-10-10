@@ -28,6 +28,7 @@ class HeroView extends StatelessWidget {
     final isDesktop = screenWidth > 800;
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 48.0 : 16.0,
         vertical: isDesktop ? 32.0 : 16.0,
@@ -35,16 +36,16 @@ class HeroView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (isDesktop) const SizedBox(height: 48),
+          if (isDesktop) const SizedBox(height: 72),
 
           // Optional Install App Banner when in web browser
           if (canInstallApp) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
                 boxShadow: [
                   BoxShadow(
@@ -53,42 +54,93 @@ class HeroView extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                alignment: WrapAlignment.center,
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  const Row(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 560;
+                  if (isNarrow) {
+                    // Mobile narrow layout (320px - 430px)
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 2.0),
+                              child: Icon(Icons.android_rounded, color: AppColors.primary, size: 20),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Download Android App (APK) for instant offline access',
+                                softWrap: true,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryDark,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: FilledButton.icon(
+                            onPressed: onDownloadApk,
+                            icon: const Icon(Icons.download_rounded, size: 16),
+                            label: const Text(
+                              'DOWNLOAD APK',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Desktop / Wide layout
+                  return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.android_rounded, color: AppColors.primary, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Download Android App (APK) for instant offline access',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDark,
+                      const Icon(Icons.android_rounded, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 10),
+                      const Flexible(
+                        child: Text(
+                          'Download Android App (APK) for instant offline access',
+                          softWrap: true,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      FilledButton.icon(
+                        onPressed: onDownloadApk,
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text(
+                          'DOWNLOAD APK',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                       ),
                     ],
-                  ),
-                  FilledButton.icon(
-                    onPressed: onDownloadApk,
-                    icon: const Icon(Icons.download_rounded, size: 16),
-                    label: const Text(
-                      'DOWNLOAD APK',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ],

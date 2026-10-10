@@ -59,6 +59,7 @@ class _TestResultViewState extends State<TestResultView> {
         ),
       ),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [

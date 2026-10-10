@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -48,6 +49,15 @@ class PrepStudyLabApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+      ),
       home: const MainShellScreen(),
     );
   }
@@ -65,6 +75,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   ActiveTestSessionModel? _activeSession;
   MockAttemptModel? _viewingResultAttempt;
   bool _isStartingTest = false;
+  bool _isAuthModalOpen = false;
 
   @override
   void initState() {
@@ -82,8 +93,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _showAuthModal({String? reasonMessage, VoidCallback? onAuthenticatedAction}) {
+    if (_isAuthModalOpen) return;
+    _isAuthModalOpen = true;
+
     showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.54),
       builder: (ctx) => AuthModal(
         reasonMessage: reasonMessage,
         authService: context.read<AuthService>(),
@@ -96,11 +112,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           );
           if (onAuthenticatedAction != null) {
-            onAuthenticatedAction();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onAuthenticatedAction();
+            });
           }
         },
       ),
-    );
+    ).whenComplete(() {
+      _isAuthModalOpen = false;
+    });
   }
 
   void _openConfigModal({String? preselectedCourseId}) {
@@ -348,8 +368,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          titleSpacing: 16,
+          toolbarHeight: 52,
+          titleSpacing: 12,
           title: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
@@ -360,12 +382,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 child: const Icon(Icons.school_outlined, size: 20, color: AppColors.primary),
               ),
               const SizedBox(width: 8),
-              Text(
-                'Prep Study Lab',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+              Flexible(
+                child: Text(
+                  'Prep Study Lab',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (testService.isOffline) ...[

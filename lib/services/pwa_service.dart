@@ -15,8 +15,9 @@ class PwaService extends ChangeNotifier {
 
   void _detectEnvironment() {
     if (kIsWeb) {
-      // In web browser environment, we offer APK download banner
-      _canInstall = true;
+      final standalone = isStandaloneMode();
+      _isStandalone = standalone;
+      _canInstall = !standalone;
     } else {
       // Running as native Android/iOS app
       _isStandalone = true;

@@ -83,6 +83,7 @@ class _CoursesViewState extends State<CoursesView> {
     }).toList();
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 32.0 : 16.0,
         vertical: 20.0,
@@ -90,6 +91,7 @@ class _CoursesViewState extends State<CoursesView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isDesktop) const SizedBox(height: 52),
           // Header
           Text(
             'ACADEMIC CURRICULUM',

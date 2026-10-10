@@ -23,7 +23,25 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Check Supabase active session
+      // 1. Check cached preferences session first to verify if user logged out
+      final prefs = await SharedPreferences.getInstance();
+      final userJsonStr = prefs.getString(AppConstants.keyUserSession);
+
+      // If user session in local prefs is null, user was signed out
+      if (userJsonStr == null) {
+        if (_supabase.auth.currentSession != null) {
+          try {
+            await _supabase.auth.signOut(scope: SignOutScope.local);
+          } catch (_) {}
+        }
+        _currentUser = null;
+        _isLoading = false;
+        notifyListeners();
+        _listenToAuthChanges();
+        return;
+      }
+
+      // If session exists in prefs, check active Supabase session
       final session = _supabase.auth.currentSession;
       if (session != null) {
         final user = session.user;
@@ -67,14 +85,10 @@ class AuthService extends ChangeNotifier {
       }
 
       // 2. Fallback to cached preferences session
-      final prefs = await SharedPreferences.getInstance();
-      final userJsonStr = prefs.getString(AppConstants.keyUserSession);
-      if (userJsonStr != null) {
-        final userMap = jsonDecode(userJsonStr);
-        final user = UserModel.fromJson(userMap);
-        if (user.status != 'deactivated') {
-          _currentUser = user;
-        }
+      final userMap = jsonDecode(userJsonStr);
+      final user = UserModel.fromJson(userMap);
+      if (user.status != 'deactivated') {
+        _currentUser = user;
       }
     } catch (e) {
       debugPrint('AuthService initialize notice: $e');
@@ -496,10 +510,16 @@ class AuthService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(AppConstants.keyUserSession);
     } catch (_) {}
-    notifyListeners();
 
     try {
-      await _supabase.auth.signOut().timeout(const Duration(seconds: 3), onTimeout: () {});
-    } catch (_) {}
+      await _supabase.auth.signOut(scope: SignOutScope.local).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {},
+      );
+    } catch (e) {
+      debugPrint('Supabase sign-out notice: $e');
+    }
+
+    notifyListeners();
   }
 }

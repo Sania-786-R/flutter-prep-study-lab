@@ -4,3 +4,5 @@ import 'download_helper_stub.dart'
 void downloadFile(String url, String fileName) {
   helper.downloadFile(url, fileName);
 }
+
+bool isStandaloneMode() => helper.isStandaloneMode();

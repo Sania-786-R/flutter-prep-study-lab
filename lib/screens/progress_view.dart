@@ -20,57 +20,60 @@ class ProgressView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 64.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.border),
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 64.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(Icons.bar_chart_outlined, size: 36, color: AppColors.primary),
                 ),
-                child: const Icon(Icons.bar_chart_outlined, size: 36, color: AppColors.primary),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'AUTHENTICATION REQUIRED',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                  color: AppColors.primary,
+                const SizedBox(height: 20),
+                Text(
+                  'AUTHENTICATION REQUIRED',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.0,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Performance Analytics',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.normal,
-                  color: AppColors.textDark,
+                const SizedBox(height: 8),
+                Text(
+                  'Performance Analytics',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 28,
+                    fontWeight: FontWeight.normal,
+                    color: AppColors.textDark,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Please sign in with your Registration Number to view your module-by-module accuracy, longitudinal progress matrix, and performance insights.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.5),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: onOpenAuth,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                const SizedBox(height: 12),
+                const Text(
+                  'Please sign in with your Registration Number to view your module-by-module accuracy, longitudinal progress matrix, and performance insights.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.5),
                 ),
-                child: const Text('Sign In with Registration Number'),
-              ),
-            ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: onOpenAuth,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: const Text('Sign In with Registration Number'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -80,6 +83,7 @@ class ProgressView extends StatelessWidget {
     final isDesktop = screenWidth >= 768;
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 32.0 : 16.0,
         vertical: 20.0,
@@ -87,7 +91,7 @@ class ProgressView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isDesktop) const SizedBox(height: 48),
+          if (isDesktop) const SizedBox(height: 52),
 
           // Header
           Text(

@@ -9,3 +9,11 @@ void downloadFile(String url, String fileName) {
   anchor.click();
   anchor.remove();
 }
+
+bool isStandaloneMode() {
+  try {
+    return html.window.matchMedia('(display-mode: standalone)').matches;
+  } catch (_) {
+    return false;
+  }
+}

@@ -1,7 +1,8 @@
 {
     "name": "Prep Study Lab",
     "short_name": "PrepStudyLab",
-    "start_url": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#F8FBFF",
     "theme_color": "#0284C7",

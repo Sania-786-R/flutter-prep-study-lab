@@ -6,3 +6,5 @@ void downloadFile(String url, String fileName) async {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
+
+bool isStandaloneMode() => false;

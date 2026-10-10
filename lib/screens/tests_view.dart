@@ -49,13 +49,15 @@ class TestsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 64.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 64.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.primarySoft,
@@ -102,6 +104,7 @@ class TestsView extends StatelessWidget {
             ],
           ),
         ),
+      ),
       );
     }
 
@@ -109,6 +112,7 @@ class TestsView extends StatelessWidget {
     final isDesktop = screenWidth > 800;
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 32.0 : 16.0,
         vertical: 20.0,
@@ -116,7 +120,7 @@ class TestsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isDesktop) const SizedBox(height: 48),
+          if (isDesktop) const SizedBox(height: 52),
 
           // Header
           if (isDesktop)
