@@ -103,63 +103,120 @@ class TestsView extends StatelessWidget {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 32.0 : 16.0,
+        vertical: 20.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 48),
+          if (isDesktop) const SizedBox(height: 48),
 
           // Header
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ACADEMIC SUITE',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2.0,
-                      color: AppColors.primary,
-                    ),
+          if (isDesktop)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ACADEMIC SUITE',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${currentUser!.name}'s Dashboard",
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 26,
+                          fontWeight: FontWeight.normal,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'TEST DRILLS, HISTORICAL PLAYBACK, AND INDIVIDUAL ACCURACY',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 10,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "${currentUser!.name}'s Dashboard",
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 26,
-                      fontWeight: FontWeight.normal,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'TEST DRILLS, HISTORICAL PLAYBACK, AND INDIVIDUAL ACCURACY',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 10,
-                      color: AppColors.textMuted,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-              FilledButton.icon(
-                onPressed: onOpenConfig,
-                icon: const Icon(Icons.tune, size: 16),
-                label: const Text('NEW TEST'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+                const SizedBox(width: 16),
+                FilledButton.icon(
+                  onPressed: onOpenConfig,
+                  icon: const Icon(Icons.tune, size: 16),
+                  label: const Text('NEW TEST'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                ),
+              ],
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ACADEMIC SUITE',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.0,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${currentUser!.name}'s Dashboard",
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.normal,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'TEST DRILLS, HISTORICAL PLAYBACK, AND INDIVIDUAL ACCURACY',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: FilledButton.icon(
+                    onPressed: onOpenConfig,
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: const Text('NEW TEST', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 20),
 
           // Performance Metrics Grid
           Wrap(

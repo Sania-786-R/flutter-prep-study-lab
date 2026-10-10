@@ -29,13 +29,13 @@ class HeroView extends StatelessWidget {
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 48.0 : 20.0,
-        vertical: 32.0,
+        horizontal: isDesktop ? 48.0 : 16.0,
+        vertical: isDesktop ? 32.0 : 16.0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 48),
+          if (isDesktop) const SizedBox(height: 48),
 
           // Optional Install App Banner when in web browser
           if (canInstallApp) ...[
@@ -297,47 +297,86 @@ class HeroView extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppConstants.appName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textDark,
+                if (isDesktop)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppConstants.appName,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textDark,
+                            ),
                           ),
-                        ),
-                        const Text(
-                          'Academic Performance Suite',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textMuted,
+                          const Text(
+                            'Academic Performance Suite',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                            ),
                           ),
+                        ],
+                      ),
+                      const Row(
+                        children: [
+                          Text(
+                            'Practice Suite',
+                            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          ),
+                          SizedBox(width: 8),
+                          Text('•', style: TextStyle(color: AppColors.textSubtle)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Exam Simulation',
+                            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    children: [
+                      Text(
+                        AppConstants.appName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
                         ),
-                      ],
-                    ),
-                    const Row(
-                      children: [
-                        Text(
-                          'Practice Suite',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Academic Performance Suite',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
                         ),
-                        SizedBox(width: 8),
-                        Text('•', style: TextStyle(color: AppColors.textSubtle)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Exam Simulation',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
+                      ),
+                      const SizedBox(height: 10),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Practice Suite',
+                            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          ),
+                          SizedBox(width: 8),
+                          Text('•', style: TextStyle(color: AppColors.textSubtle)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Exam Simulation',
+                            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 24),
 
                 // Creator Signature Badge matching exact visual design
                 Container(

@@ -162,6 +162,8 @@ class _MockTestViewState extends State<MockTestView> {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 500;
     final isExam = _session.config.mode == 'exam';
     final currentItem = _session.items[_session.currentIndex];
     final answeredCount = _session.items.where((i) => i.selectedOptionIndex != null).length;
@@ -172,46 +174,50 @@ class _MockTestViewState extends State<MockTestView> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        titleSpacing: 16,
+        titleSpacing: 12,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: isExam ? AppColors.errorSoft : AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: isExam ? AppColors.error.withValues(alpha: 0.3) : AppColors.border),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(isExam ? Icons.shield_outlined : Icons.auto_awesome, size: 14, color: isExam ? AppColors.error : AppColors.primary),
-                  const SizedBox(width: 6),
+                  Icon(isExam ? Icons.shield_outlined : Icons.auto_awesome, size: 13, color: isExam ? AppColors.error : AppColors.primary),
+                  const SizedBox(width: 4),
                   Text(
-                    isExam ? 'EXAM MODE' : 'PRACTICE MODE',
+                    isCompact ? (isExam ? 'EXAM' : 'PRACTICE') : (isExam ? 'EXAM MODE' : 'PRACTICE MODE'),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
+                      letterSpacing: 0.8,
                       color: isExam ? AppColors.error : AppColors.primary,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _session.config.courseName,
-                style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                overflow: TextOverflow.ellipsis,
+            if (!isCompact) ...[
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  _session.config.courseName,
+                  style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
+            ],
           ],
         ),
         actions: [
           // Timer
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12, vertical: 5),
             margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.primarySoft,
@@ -219,21 +225,22 @@ class _MockTestViewState extends State<MockTestView> {
               border: Border.all(color: AppColors.border),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.timer_outlined,
-                  size: 16,
+                  size: 15,
                   color: isExam && _session.secondsRemaining != null && _session.secondsRemaining! <= 180
                       ? AppColors.error
                       : AppColors.primary,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Text(
                   isExam && _session.secondsRemaining != null
                       ? _formatTime(_session.secondsRemaining!)
                       : _formatTime(_session.secondsElapsed),
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: isExam && _session.secondsRemaining != null && _session.secondsRemaining! <= 180
                         ? AppColors.error
@@ -243,26 +250,27 @@ class _MockTestViewState extends State<MockTestView> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
 
           // Palette drawer toggle
           IconButton(
-            icon: const Icon(Icons.grid_view, color: AppColors.textMuted),
+            icon: const Icon(Icons.grid_view, color: AppColors.textMuted, size: 20),
             tooltip: 'Question Palette',
             onPressed: () => setState(() => _isPaletteOpen = !_isPaletteOpen),
           ),
 
           // Finish Test
           Padding(
-            padding: const EdgeInsets.only(right: 12.0),
+            padding: const EdgeInsets.only(right: 8.0),
             child: OutlinedButton(
               onPressed: _manualSubmit,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.border),
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 14, vertical: 6),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              child: const Text('FINISH TEST', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              child: Text(isCompact ? 'FINISH' : 'FINISH TEST', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -270,7 +278,7 @@ class _MockTestViewState extends State<MockTestView> {
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: EdgeInsets.all(isCompact ? 14.0 : 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -336,7 +344,7 @@ class _MockTestViewState extends State<MockTestView> {
                         Text(
                           currentItem.questionText,
                           style: GoogleFonts.playfairDisplay(
-                            fontSize: 22,
+                            fontSize: isCompact ? 18 : 22,
                             fontWeight: FontWeight.normal,
                             color: AppColors.textDark,
                             height: 1.4,
@@ -507,24 +515,20 @@ class _MockTestViewState extends State<MockTestView> {
                       onPressed: _session.currentIndex > 0
                           ? () => setState(() => _session.currentIndex--)
                           : null,
-                      icon: const Icon(Icons.arrow_back, size: 16),
-                      label: const Text('PREVIOUS'),
+                      icon: const Icon(Icons.arrow_back, size: 15),
+                      label: Text(screenWidth < 370 ? 'PREV' : 'PREVIOUS'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth < 380 ? 12 : 18, vertical: 10),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       ),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          '${_session.currentIndex + 1} / ${_session.items.length}',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${_session.currentIndex + 1} / ${_session.items.length}',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                     FilledButton.icon(
                       onPressed: _session.currentIndex < _session.items.length - 1
@@ -534,14 +538,14 @@ class _MockTestViewState extends State<MockTestView> {
                         _session.currentIndex < _session.items.length - 1
                             ? Icons.arrow_forward
                             : Icons.check,
-                        size: 16,
+                        size: 15,
                       ),
                       label: Text(
-                        _session.currentIndex < _session.items.length - 1 ? 'NEXT' : 'SUBMIT',
+                        _session.currentIndex < _session.items.length - 1 ? (screenWidth < 370 ? 'NEXT' : 'NEXT') : 'SUBMIT',
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth < 380 ? 12 : 18, vertical: 10),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       ),
                     ),
@@ -551,13 +555,21 @@ class _MockTestViewState extends State<MockTestView> {
             ),
           ),
 
-          // Palette Side Drawer
-          if (_isPaletteOpen)
+          // Palette Side Drawer with backdrop
+          if (_isPaletteOpen) ...[
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _isPaletteOpen = false),
+                child: Container(
+                  color: Colors.black38,
+                ),
+              ),
+            ),
             Positioned(
               top: 0,
               bottom: 0,
               right: 0,
-              width: 280,
+              width: (screenWidth * 0.85).clamp(260.0, 320.0),
               child: Container(
                 color: Colors.white,
                 padding: const EdgeInsets.all(20),
@@ -645,6 +657,7 @@ class _MockTestViewState extends State<MockTestView> {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

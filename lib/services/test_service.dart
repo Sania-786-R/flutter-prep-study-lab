@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:prep_study_lab/core/constants/app_constants.dart';
+import 'package:prep_study_lab/core/data/seed_data.dart';
 import 'package:prep_study_lab/models/models.dart';
 
 class ActiveTestSessionModel {
@@ -62,12 +63,14 @@ class TestService extends ChangeNotifier {
   List<MockAttemptModel> _attempts = [];
   ActiveTestSessionModel? _activeSession;
   bool _isLoading = false;
+  bool _isOffline = false;
 
   List<CourseModel> get courses => _courses;
   List<QuestionModel> get questions => _questions;
   List<MockAttemptModel> get attempts => _attempts;
   ActiveTestSessionModel? get activeSession => _activeSession;
   bool get isLoading => _isLoading;
+  bool get isOffline => _isOffline;
 
   SupabaseClient get _supabase => Supabase.instance.client;
 
@@ -75,7 +78,7 @@ class TestService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // 1. Instant cache load so UI renders in 1 millisecond
+    // 1. Instant cache & seed load so UI renders immediately with all Week 1-11 questions
     try {
       final prefs = await SharedPreferences.getInstance();
       final cachedCourses = prefs.getString(AppConstants.keyCachedCourses);
@@ -88,22 +91,36 @@ class TestService extends ChangeNotifier {
         final List list = jsonDecode(cachedQuestions);
         _questions = list.map((q) => QuestionModel.fromJson(Map<String, dynamic>.from(q))).toList();
       }
+
+      // If cache is empty, load verified initial seed (150 questions across Weeks 1 to 11)
+      if (_courses.isEmpty) {
+        _courses = getInitialCourses();
+        await prefs.setString(AppConstants.keyCachedCourses, jsonEncode(_courses.map((c) => c.toJson()).toList()));
+      }
+      if (_questions.isEmpty) {
+        _questions = getInitialQuestions();
+        await prefs.setString(AppConstants.keyCachedQuestions, jsonEncode(_questions.map((q) => q.toJson()).toList()));
+      }
+
       if (_courses.isNotEmpty || _questions.isNotEmpty) {
         _isLoading = false;
         notifyListeners();
       }
     } catch (_) {}
 
-    // 2. Fetch fresh data concurrently in parallel
+    // 2. Fetch fresh data from Supabase with safe 10-second timeout
     try {
       await Future.wait([
-        loadCourses(),
-        loadQuestions(),
-        if (userId != null) loadAttempts(userId),
-        if (userId != null) loadActiveSession(userId),
+        loadCourses().timeout(const Duration(seconds: 10), onTimeout: () => _courses),
+        loadQuestions().timeout(const Duration(seconds: 10), onTimeout: () => _questions),
+        if (userId != null) loadAttempts(userId).timeout(const Duration(seconds: 10), onTimeout: () => _attempts),
+        if (userId != null) loadActiveSession(userId).timeout(const Duration(seconds: 5), onTimeout: () => _activeSession),
+        if (userId != null) syncPendingAttempts(userId),
       ]);
+      _isOffline = false;
     } catch (e) {
-      debugPrint('Notice during test service initialize: $e');
+      _isOffline = true;
+      debugPrint('Notice during test service initialize (offline fallback active): $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -117,31 +134,30 @@ class TestService extends ChangeNotifier {
       if (publishedOnly) {
         query = query.eq('status', 'published');
       }
-      final response = await query.order('created_at', ascending: true);
+      final response = await query.order('created_at', ascending: true).timeout(const Duration(seconds: 10));
       final List data = response as List;
 
-      _courses = data.map((row) => CourseModel.fromJson(Map<String, dynamic>.from(row))).toList();
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          AppConstants.keyCachedCourses, jsonEncode(_courses.map((c) => c.toJson()).toList()));
-      notifyListeners();
+      if (data.isNotEmpty) {
+        _courses = data.map((row) => CourseModel.fromJson(Map<String, dynamic>.from(row))).toList();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            AppConstants.keyCachedCourses, jsonEncode(_courses.map((c) => c.toJson()).toList()));
+        _isOffline = false;
+        notifyListeners();
+      }
       return _courses;
     } catch (e) {
-      debugPrint('Error loading courses from Supabase: $e');
-      // Load cached fallback
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(AppConstants.keyCachedCourses);
-      if (raw != null) {
-        final List list = jsonDecode(raw);
-        _courses = list.map((c) => CourseModel.fromJson(Map<String, dynamic>.from(c))).toList();
+      debugPrint('Notice loading courses from Supabase (using cached seed): $e');
+      _isOffline = true;
+      if (_courses.isEmpty) {
+        _courses = getInitialCourses();
         notifyListeners();
       }
       return _courses;
     }
   }
 
-  // Fetch questions directly from Supabase
+  // Fetch questions directly from Supabase with offline seed fallback
   Future<List<QuestionModel>> loadQuestions({
     String? courseId,
     List<int>? weeks,
@@ -155,33 +171,60 @@ class TestService extends ChangeNotifier {
       if (weeks != null && weeks.isNotEmpty) {
         query = query.inFilter('week_number', weeks);
       }
-      final response = await query.order('week_number', ascending: true);
+      final response = await query.order('week_number', ascending: true).timeout(const Duration(seconds: 10));
       final List data = response as List;
 
-      var mapped = data.map((row) => QuestionModel.fromJson(Map<String, dynamic>.from(row))).toList();
-      if (approvedOnly) {
-        mapped = mapped.where((q) => q.isApproved && q.correctAnswerIndex != null).toList();
-      }
+      if (data.isNotEmpty) {
+        var mapped = data.map((row) => QuestionModel.fromJson(Map<String, dynamic>.from(row))).toList();
+        if (approvedOnly) {
+          mapped = mapped.where((q) => q.isApproved && q.correctAnswerIndex != null).toList();
+        }
 
-      if (courseId == null && (weeks == null || weeks.isEmpty)) {
-        _questions = mapped;
+        if (courseId == null && (weeks == null || weeks.isEmpty)) {
+          _questions = mapped;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+              AppConstants.keyCachedQuestions, jsonEncode(_questions.map((q) => q.toJson()).toList()));
+        }
+        _isOffline = false;
+        notifyListeners();
+        return mapped;
+      }
+    } catch (e) {
+      debugPrint('Notice fetching questions from Supabase (using cached seed): $e');
+      _isOffline = true;
+    }
+
+    // Fallback to cached questions or initial verified seed
+    if (_questions.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(AppConstants.keyCachedQuestions);
+      if (raw != null) {
+        try {
+          final List list = jsonDecode(raw);
+          _questions = list.map((q) => QuestionModel.fromJson(Map<String, dynamic>.from(q))).toList();
+        } catch (_) {}
+      }
+      if (_questions.isEmpty) {
+        _questions = getInitialQuestions();
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(
             AppConstants.keyCachedQuestions, jsonEncode(_questions.map((q) => q.toJson()).toList()));
       }
       notifyListeners();
-      return mapped;
-    } catch (e) {
-      debugPrint('Error fetching questions from Supabase: $e');
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(AppConstants.keyCachedQuestions);
-      if (raw != null) {
-        final List list = jsonDecode(raw);
-        _questions = list.map((q) => QuestionModel.fromJson(Map<String, dynamic>.from(q))).toList();
-        notifyListeners();
-      }
-      return _questions;
     }
+
+    var result = _questions;
+    if (courseId != null) {
+      result = result.where((q) => q.courseId == courseId).toList();
+    }
+    if (weeks != null && weeks.isNotEmpty) {
+      result = result.where((q) => weeks.contains(q.weekNumber)).toList();
+    }
+    if (approvedOnly) {
+      result = result.where((q) => q.isApproved && q.correctAnswerIndex != null).toList();
+    }
+    return result;
   }
 
   // Load student attempts from Supabase
@@ -416,10 +459,84 @@ class TestService extends ChangeNotifier {
     return session;
   }
 
-  // Finalize and save attempt to Supabase
+  // Sync offline attempts queue with Supabase idempotently
+  Future<void> syncPendingAttempts([String? userId]) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(AppConstants.keyPendingAttempts);
+      if (raw == null) return;
+      final List pendingList = jsonDecode(raw);
+      if (pendingList.isEmpty) return;
+
+      final List remaining = [];
+      for (final item in pendingList) {
+        try {
+          final attMap = Map<String, dynamic>.from(item as Map);
+          final attempt = MockAttemptModel.fromJson(attMap);
+
+          await _supabase.from('mock_attempts').upsert({
+            'id': attempt.id,
+            'user_id': attempt.userId,
+            'course_id': attempt.courseId,
+            'course_name': attempt.courseName,
+            'mode': attempt.mode,
+            'total_questions': attempt.totalQuestions,
+            'score': attempt.score,
+            'percentage': attempt.percentage,
+            'correct_count': attempt.correctCount,
+            'wrong_count': attempt.wrongCount,
+            'unanswered_count': attempt.unansweredCount,
+            'time_taken_seconds': attempt.timeTakenSeconds,
+            'time_limit_seconds': attempt.timeLimitSeconds,
+            'is_completed': true,
+            'student_name': attempt.studentName,
+            'reg_number': attempt.regNumber ?? attempt.studentName,
+            'selected_weeks': attempt.selectedWeeks,
+            'started_at': attempt.startedAt,
+            'submitted_at': attempt.submittedAt,
+            'completed_at': attempt.completedAt,
+            'created_at': attempt.createdAt,
+          }).timeout(const Duration(seconds: 10));
+
+          if (attempt.items.isNotEmpty) {
+            final itemRows = attempt.items.map((it) {
+              return {
+                'attempt_id': attempt.id,
+                'question_id': it.questionId,
+                'question_index': it.questionIndex,
+                'question_text': it.questionText,
+                'displayed_options': it.displayedOptions,
+                'selected_option_index': it.selectedOptionIndex,
+                'correct_option_index': it.correctOptionIndex,
+                'is_correct': it.isCorrect,
+                'is_marked_for_review': it.isMarkedForReview,
+                'time_spent_seconds': it.timeSpentSeconds,
+              };
+            }).toList();
+            await _supabase.from('attempt_items').upsert(itemRows).timeout(const Duration(seconds: 10));
+          }
+        } catch (e) {
+          debugPrint('Notice during syncPendingAttempts item: $e');
+          remaining.add(item);
+        }
+      }
+
+      await prefs.setString(AppConstants.keyPendingAttempts, jsonEncode(remaining));
+      if (remaining.isEmpty) {
+        _isOffline = false;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  // Submit Completed Test Simulation (Locally persisted + Queued for Cloud Sync)
   Future<Map<String, dynamic>> submitAttempt(
-      ActiveTestSessionModel session, UserModel? user) async {
-    final totalQuestions = session.items.length;
+    ActiveTestSessionModel session,
+    UserModel? user,
+  ) async {
+    final now = DateTime.now();
+    final completedAt = now.toIso8601String();
+
     int correctCount = 0;
     int wrongCount = 0;
     int unansweredCount = 0;
@@ -434,19 +551,12 @@ class TestService extends ChangeNotifier {
       }
     }
 
+    final totalQuestions = session.items.length;
     final double percentage = totalQuestions > 0
         ? ((correctCount / totalQuestions) * 100).roundToDouble()
         : 0.0;
-    final completedAt = DateTime.now().toIso8601String();
 
-    String? authUserId;
-    if (user != null &&
-        RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-                caseSensitive: false)
-            .hasMatch(user.id)) {
-      authUserId = user.id;
-    }
-
+    final authUserId = user?.id;
     final studentName = user?.name ?? 'Student';
 
     final attempt = MockAttemptModel(
@@ -475,57 +585,36 @@ class TestService extends ChangeNotifier {
       items: session.items,
     );
 
-    // Write to Supabase mock_attempts
-    try {
-      await _supabase.from('mock_attempts').insert({
-        'id': attempt.id,
-        'user_id': authUserId,
-        'course_id': attempt.courseId,
-        'course_name': attempt.courseName,
-        'mode': attempt.mode,
-        'total_questions': attempt.totalQuestions,
-        'score': attempt.score,
-        'percentage': attempt.percentage,
-        'correct_count': attempt.correctCount,
-        'wrong_count': attempt.wrongCount,
-        'unanswered_count': attempt.unansweredCount,
-        'time_taken_seconds': attempt.timeTakenSeconds,
-        'time_limit_seconds': attempt.timeLimitSeconds,
-        'is_completed': true,
-        'student_name': studentName,
-        'reg_number': studentName,
-        'selected_weeks': session.config.selectedWeeks,
-        'started_at': session.startedAt,
-        'submitted_at': completedAt,
-        'completed_at': completedAt,
-        'created_at': session.startedAt,
-      });
-
-      // Write attempt_items
-      final itemRows = attempt.items.map((it) {
-        return {
-          'attempt_id': attempt.id,
-          'question_id': it.questionId,
-          'question_index': it.questionIndex,
-          'question_text': it.questionText,
-          'displayed_options': it.displayedOptions,
-          'selected_option_index': it.selectedOptionIndex,
-          'correct_option_index': it.correctOptionIndex,
-          'is_correct': it.isCorrect,
-          'is_marked_for_review': it.isMarkedForReview,
-          'time_spent_seconds': it.timeSpentSeconds,
-        };
-      }).toList();
-
-      await _supabase.from('attempt_items').insert(itemRows);
-    } catch (e) {
-      debugPrint('Notice saving attempt to Supabase: $e');
-    }
-
+    // 1. Immediately cache attempt locally in memory and persistent storage
     _attempts.insert(0, attempt);
+    if (authUserId != null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            '${AppConstants.keyCachedAttempts}_$authUserId',
+            jsonEncode(_attempts.map((a) => a.toJson()).toList()));
+      } catch (_) {}
+    }
     await saveActiveSession(null, user?.id);
-    notifyListeners();
 
+    // 2. Queue in local sync queue for cloud persistence
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List pendingQueue = [];
+      final rawPending = prefs.getString(AppConstants.keyPendingAttempts);
+      if (rawPending != null) {
+        try {
+          pendingQueue = jsonDecode(rawPending);
+        } catch (_) {}
+      }
+      pendingQueue.add(attempt.toJson());
+      await prefs.setString(AppConstants.keyPendingAttempts, jsonEncode(pendingQueue));
+    } catch (_) {}
+
+    // 3. Attempt immediate cloud sync in background
+    syncPendingAttempts(authUserId);
+
+    notifyListeners();
     return {'success': true, 'attempt': attempt};
   }
 

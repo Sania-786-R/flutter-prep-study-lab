@@ -93,11 +93,14 @@ class _MockConfigModalState extends State<MockConfigModal> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       backgroundColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 580, maxHeight: 720),
+        constraints: BoxConstraints(
+          maxWidth: 580,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -252,29 +255,40 @@ class _MockConfigModalState extends State<MockConfigModal> {
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildModeSelector(
-                              title: 'Practice Mode',
-                              description: 'Immediate correctness feedback and learning hints after each selection.',
-                              icon: Icons.auto_awesome_outlined,
-                              isSelected: _mode == 'practice',
-                              onTap: () => setState(() => _mode = 'practice'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildModeSelector(
-                              title: 'Exam Mode',
-                              description: 'Strict timer simulation. Neutral options with zero correctness revealed.',
-                              icon: Icons.shield_outlined,
-                              isSelected: _mode == 'exam',
-                              onTap: () => setState(() => _mode = 'exam'),
-                            ),
-                          ),
-                        ],
-                      ),
+                      Builder(builder: (ctx) {
+                        final isCompact = MediaQuery.of(ctx).size.width < 500;
+                        final practiceCard = _buildModeSelector(
+                          title: 'Practice Mode',
+                          description: 'Immediate correctness feedback and learning hints after each selection.',
+                          icon: Icons.auto_awesome_outlined,
+                          isSelected: _mode == 'practice',
+                          onTap: () => setState(() => _mode = 'practice'),
+                        );
+                        final examCard = _buildModeSelector(
+                          title: 'Exam Mode',
+                          description: 'Strict timer simulation. Neutral options with zero correctness revealed.',
+                          icon: Icons.shield_outlined,
+                          isSelected: _mode == 'exam',
+                          onTap: () => setState(() => _mode = 'exam'),
+                        );
+
+                        if (isCompact) {
+                          return Column(
+                            children: [
+                              practiceCard,
+                              const SizedBox(height: 10),
+                              examCard,
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Expanded(child: practiceCard),
+                            const SizedBox(width: 12),
+                            Expanded(child: examCard),
+                          ],
+                        );
+                      }),
                       const SizedBox(height: 20),
 
                       // Question Count

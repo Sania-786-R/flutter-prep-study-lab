@@ -252,49 +252,46 @@ class AuthService extends ChangeNotifier {
         email: sanitizedEmail,
         password: password,
         data: {'regNumber': cleanReg, 'name': cleanReg, 'role': 'student'},
-      );
+      ).timeout(const Duration(seconds: 12));
 
       if (response.user != null) {
         userId = response.user!.id;
         createdAt = response.user!.createdAt;
 
         try {
-          await _supabase.from('user_roles').insert({'user_id': response.user!.id, 'role': 'student'});
+          await _supabase.from('user_roles').insert({'user_id': response.user!.id, 'role': 'student'}).timeout(const Duration(seconds: 5));
         } catch (_) {}
 
         if (response.session == null) {
           try {
-            await _supabase.auth.signInWithPassword(email: sanitizedEmail, password: password);
+            await _supabase.auth.signInWithPassword(email: sanitizedEmail, password: password).timeout(const Duration(seconds: 8));
           } catch (_) {}
         }
-      } else {
-        return {'success': false, 'error': 'Failed to create account. Please try again.'};
       }
     } on AuthException catch (e) {
       if (e.statusCode == '422' ||
           e.code == 'user_already_exists' ||
           e.message.toLowerCase().contains('already registered') ||
           e.message.toLowerCase().contains('already exists')) {
+        // Test if user already knows the password
+        try {
+          final loginRes = await login(cleanReg, password);
+          if (loginRes['success'] == true) {
+            return loginRes;
+          }
+        } catch (_) {}
         return {
           'success': false,
-          'error': 'Account already exists. Please sign in.'
+          'error': 'An account with identifier $cleanReg already exists. Please sign in with your password.'
         };
       }
-      if (e.message.toLowerCase().contains('rate limit')) {
-        return {
-          'success': false,
-          'error': 'Rate limit exceeded. Please try again later.'
-        };
-      }
-      return {'success': false, 'error': e.message};
+      debugPrint('Supabase signup notice (falling back to secure local account): ${e.message}');
     } catch (e) {
-      if (e.toString().toLowerCase().contains('network') ||
-          e.toString().toLowerCase().contains('socket') ||
-          e.toString().toLowerCase().contains('failed host lookup') ||
-          e.toString().toLowerCase().contains('connection')) {
-        return {'success': false, 'error': 'Network error. Please check your internet connection.'};
-      }
-      return {'success': false, 'error': 'Authentication service unavailable. Please try again.'};
+      debugPrint('Supabase signup notice (offline/network fallback active): $e');
+    }
+
+    if (userId.isEmpty) {
+      userId = 'std_${DateTime.now().millisecondsSinceEpoch}_${cleanReg.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}';
     }
 
     // 2. Persist student credentials cache securely with salted SHA-256 hash
@@ -371,7 +368,7 @@ class AuthService extends ChangeNotifier {
       final response = await _supabase.auth.signInWithPassword(
         email: emailToUse,
         password: password,
-      );
+      ).timeout(const Duration(seconds: 12));
 
       if (response.user != null) {
         final isAdminLogin = cleanInput.toUpperCase() == 'ADMIN' ||
@@ -384,12 +381,13 @@ class AuthService extends ChangeNotifier {
               .from('user_roles')
               .select('role')
               .eq('user_id', response.user!.id)
-              .maybeSingle();
+              .maybeSingle()
+              .timeout(const Duration(seconds: 5));
 
           if (roleRow != null && roleRow['role'] == 'admin') {
             role = 'admin';
           } else if (isAdminLogin) {
-            await _supabase.from('user_roles').upsert({'user_id': response.user!.id, 'role': 'admin'});
+            await _supabase.from('user_roles').upsert({'user_id': response.user!.id, 'role': 'admin'}).timeout(const Duration(seconds: 5));
           }
         } catch (_) {}
 
@@ -436,12 +434,9 @@ class AuthService extends ChangeNotifier {
         return {'success': true, 'user': authUser};
       }
     } on AuthException catch (e) {
-      if (!e.message.toLowerCase().contains('invalid login credentials')) {
-        return {'success': false, 'error': e.message};
-      }
       debugPrint('Supabase sign-in notice: ${e.message}');
     } catch (e) {
-      debugPrint('Supabase sign-in error: $e');
+      debugPrint('Supabase sign-in network notice: $e');
     }
 
     // 2. Check local accounts fallback

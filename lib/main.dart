@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:prep_study_lab/core/constants/app_constants.dart';
@@ -264,70 +265,235 @@ class _MainShellScreenState extends State<MainShellScreen> {
       );
     }
 
-    // Normal application shell
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 768;
+
+    void handleTabSelect(int idx) {
+      if ((idx == 1 || idx == 3) && !auth.isAuthenticated) {
+        _showAuthModal(
+          reasonMessage: 'Sign in with your Registration Number to access your tests and analytics.',
+          onAuthenticatedAction: () => setState(() => _activeTabIndex = idx),
+        );
+        return;
+      }
+      setState(() => _activeTabIndex = idx);
+    }
+
+    final tabViews = [
+      HeroView(
+        onStartPracticing: () => _openConfigModal(),
+        onViewTests: () => setState(() => _activeTabIndex = 1),
+        totalCourses: testService.courses.length,
+        totalQuestions: testService.questions.length,
+        canInstallApp: pwa.canInstall,
+        onInstallApp: () => pwa.markInstalled(),
+        onDownloadApk: () => pwa.downloadApk(),
+      ),
+      TestsView(
+        currentUser: auth.currentUser,
+        attempts: testService.attempts,
+        activeSession: testService.activeSession,
+        progress: testService.calculateProgress(),
+        onOpenConfig: () => _openConfigModal(),
+        onOpenAuth: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to view tests.'),
+        onResumeTest: (session) {
+          setState(() {
+            _activeSession = session;
+          });
+        },
+        onViewAttemptResult: (att) {
+          setState(() {
+            _viewingResultAttempt = att;
+          });
+        },
+        onRetryAttemptWrong: (att) => _retryWrong(att),
+      ),
+      CoursesView(
+        courses: testService.courses,
+        testService: testService,
+        onStartCourseTest: (courseId) => _openConfigModal(preselectedCourseId: courseId),
+      ),
+      ProgressView(
+        currentUser: auth.currentUser,
+        progress: testService.calculateProgress(),
+        onStartPracticing: () => _openConfigModal(),
+        onOpenAuth: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to view progress analytics.'),
+      ),
+    ];
+
+    if (!isDesktop) {
+      // Mobile Shell with Top AppBar and Bottom NavigationBar
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          titleSpacing: 16,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.school_outlined, size: 20, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Prep Study Lab',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                ),
+              ),
+              if (testService.isOffline) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.warningSoft,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.wifi_off, size: 10, color: AppColors.warning),
+                      SizedBox(width: 3),
+                      Text('OFFLINE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.warning)),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            if (auth.currentUser != null)
+              PopupMenuButton<String>(
+                tooltip: 'Account',
+                offset: const Offset(0, 45),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person_outline, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 80),
+                        child: Text(
+                          auth.currentUser!.name,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'progress',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.bar_chart, size: 18, color: AppColors.primary),
+                        SizedBox(width: 8),
+                        Text('My Analytics'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.logout, size: 18, color: AppColors.error),
+                        SizedBox(width: 8),
+                        Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (val) async {
+                  if (val == 'progress') {
+                    setState(() => _activeTabIndex = 3);
+                  } else if (val == 'logout') {
+                    await auth.logout();
+                    setState(() => _activeTabIndex = 0);
+                  }
+                },
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                child: FilledButton.icon(
+                  onPressed: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to continue.'),
+                  icon: const Icon(Icons.login, size: 14),
+                  label: const Text('Sign In', style: TextStyle(fontSize: 11)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        body: IndexedStack(
+          index: _activeTabIndex,
+          children: tabViews,
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _activeTabIndex,
+          onDestinationSelected: handleTabSelect,
+          backgroundColor: Colors.white,
+          elevation: 8,
+          indicatorColor: AppColors.primarySoft,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home, color: AppColors.primary),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.description_outlined),
+              selectedIcon: Icon(Icons.description, color: AppColors.primary),
+              label: 'Tests',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book, color: AppColors.primary),
+              label: 'Courses',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.bar_chart_outlined),
+              selectedIcon: Icon(Icons.bar_chart, color: AppColors.primary),
+              label: 'Progress',
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Desktop/Tablet Shell with floating dock navigation
     return Scaffold(
       body: Stack(
         children: [
-          // Main Body Tabs
           IndexedStack(
             index: _activeTabIndex,
-            children: [
-              HeroView(
-                onStartPracticing: () => _openConfigModal(),
-                onViewTests: () => setState(() => _activeTabIndex = 1),
-                totalCourses: testService.courses.length,
-                totalQuestions: testService.questions.length,
-                canInstallApp: pwa.canInstall,
-                onInstallApp: () => pwa.markInstalled(),
-                onDownloadApk: () => pwa.downloadApk(),
-              ),
-              TestsView(
-                currentUser: auth.currentUser,
-                attempts: testService.attempts,
-                activeSession: testService.activeSession,
-                progress: testService.calculateProgress(),
-                onOpenConfig: () => _openConfigModal(),
-                onOpenAuth: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to view tests.'),
-                onResumeTest: (session) {
-                  setState(() {
-                    _activeSession = session;
-                  });
-                },
-                onViewAttemptResult: (att) {
-                  setState(() {
-                    _viewingResultAttempt = att;
-                  });
-                },
-                onRetryAttemptWrong: (att) => _retryWrong(att),
-              ),
-              CoursesView(
-                courses: testService.courses,
-                testService: testService,
-                onStartCourseTest: (courseId) => _openConfigModal(preselectedCourseId: courseId),
-              ),
-              ProgressView(
-                currentUser: auth.currentUser,
-                progress: testService.calculateProgress(),
-                onStartPracticing: () => _openConfigModal(),
-                onOpenAuth: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to view progress analytics.'),
-              ),
-            ],
+            children: tabViews,
           ),
-
-          // Floating Glass Navigation Dock at Top
           FloatingDockNavigation(
             activeIndex: _activeTabIndex,
             currentUser: auth.currentUser,
-            onTabSelected: (idx) {
-              if ((idx == 1 || idx == 3) && !auth.isAuthenticated) {
-                _showAuthModal(
-                  reasonMessage: 'Sign in with your Registration Number to access your tests and analytics.',
-                  onAuthenticatedAction: () => setState(() => _activeTabIndex = idx),
-                );
-                return;
-              }
-              setState(() => _activeTabIndex = idx);
-            },
+            onTabSelected: handleTabSelect,
             onOpenAuth: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to continue.'),
             onLogout: () async {
               await auth.logout();

@@ -129,8 +129,10 @@ class _TestResultViewState extends State<TestResultView> {
                   const SizedBox(height: 24),
 
                   // Stats row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  Wrap(
+                    alignment: WrapAlignment.spaceEvenly,
+                    spacing: 16,
+                    runSpacing: 12,
                     children: [
                       _buildSummaryStat('Correct', '${att.correctCount}', Icons.check_circle_outline, AppColors.success),
                       _buildSummaryStat('Wrong', '${att.wrongCount}', Icons.cancel_outlined, AppColors.error),
@@ -144,35 +146,56 @@ class _TestResultViewState extends State<TestResultView> {
             const SizedBox(height: 24),
 
             // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: widget.onBackToDashboard,
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: const Text('BACK TO DASHBOARD'),
-                    style: OutlinedButton.styleFrom(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 420;
+                final backButton = OutlinedButton.icon(
+                  onPressed: widget.onBackToDashboard,
+                  icon: const Icon(Icons.dashboard_outlined),
+                  label: const Text('BACK TO DASHBOARD'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                );
+
+                Widget? retryButton;
+                if (hasWrongs) {
+                  retryButton = FilledButton.icon(
+                    onPressed: () => widget.onRetryWrong(att),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('RETRY WRONG'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.error,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     ),
-                  ),
-                ),
-                if (hasWrongs) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => widget.onRetryWrong(att),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('RETRY WRONG'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+                  );
+                }
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      backButton,
+                      if (retryButton != null) ...[
+                        const SizedBox(height: 10),
+                        retryButton,
+                      ],
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: backButton),
+                    if (retryButton != null) ...[
+                      const SizedBox(width: 12),
+                      Expanded(child: retryButton),
+                    ],
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 32),
 

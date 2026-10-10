@@ -76,12 +76,18 @@ class ProgressView extends StatelessWidget {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 768;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 32.0 : 16.0,
+        vertical: 20.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 48),
+          if (isDesktop) const SizedBox(height: 48),
 
           // Header
           Text(
@@ -97,7 +103,7 @@ class ProgressView extends StatelessWidget {
           Text(
             "${currentUser!.name}'s Progress & Analytics",
             style: GoogleFonts.playfairDisplay(
-              fontSize: 28,
+              fontSize: isDesktop ? 28 : 22,
               fontWeight: FontWeight.normal,
               color: AppColors.textDark,
             ),
@@ -111,24 +117,38 @@ class ProgressView extends StatelessWidget {
               letterSpacing: 0.8,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Hero Stats Grid
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _buildProgressHeroCard('Questions Attempted', '${progress.totalAttempted}', 'Across ${progress.testsCompleted} sessions', Icons.track_changes, AppColors.primary),
-              _buildProgressHeroCard('Overall Accuracy', '${progress.accuracy}%', '${progress.totalCorrect} correct answers', Icons.trending_up, AppColors.success),
-              _buildProgressHeroCard('Total Tests', '${progress.testsCompleted}', '${progress.examCompleted} Exam / ${progress.practiceCompleted} Practice', Icons.emoji_events_outlined, AppColors.warning),
-              _buildProgressHeroCard('Best Score', '${progress.bestScore}', 'Top individual result', Icons.auto_awesome_outlined, AppColors.primary),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final avail = constraints.maxWidth;
+              final cardWidth = avail > 700
+                  ? (avail - 36) / 4
+                  : (avail > 360
+                      ? (avail - 12) / 2
+                      : avail);
+
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _buildProgressHeroCard('Questions Attempted', '${progress.totalAttempted}', 'Across ${progress.testsCompleted} sessions', Icons.track_changes, AppColors.primary, cardWidth),
+                  _buildProgressHeroCard('Overall Accuracy', '${progress.accuracy}%', '${progress.totalCorrect} correct answers', Icons.trending_up, AppColors.success, cardWidth),
+                  _buildProgressHeroCard('Total Tests', '${progress.testsCompleted}', '${progress.examCompleted} Exam / ${progress.practiceCompleted} Practice', Icons.emoji_events_outlined, AppColors.warning, cardWidth),
+                  _buildProgressHeroCard('Best Score', '${progress.bestScore}', 'Top individual result', Icons.auto_awesome_outlined, AppColors.primary, cardWidth),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
 
           // Week-wise Performance Matrix
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               Text(
                 'WEEK-WISE PROGRESS MATRIX',
@@ -268,10 +288,10 @@ class ProgressView extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressHeroCard(String title, String value, String subtitle, IconData icon, Color color) {
+  Widget _buildProgressHeroCard(String title, String value, String subtitle, IconData icon, Color color, double width) {
     return Container(
-      width: 200,
-      padding: const EdgeInsets.all(18),
+      width: width,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -283,14 +303,26 @@ class ProgressView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
               Icon(icon, size: 18, color: color),
             ],
           ),
           const SizedBox(height: 10),
-          Text(value, style: GoogleFonts.playfairDisplay(fontSize: 28, color: color, fontWeight: FontWeight.normal)),
+          Text(value, style: GoogleFonts.playfairDisplay(fontSize: 26, color: color, fontWeight: FontWeight.normal)),
           const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textSubtle)),
+          Text(
+            subtitle,
+            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textSubtle),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

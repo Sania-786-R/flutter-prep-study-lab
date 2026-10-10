@@ -18,6 +18,7 @@ class AppConstants {
   static const String keyCachedCourses = 'prep_studylab_courses_v2';
   static const String keyCachedQuestions = 'prep_studylab_questions_v2';
   static const String keyCachedAttempts = 'prep_studylab_attempts_v2';
+  static const String keyPendingAttempts = 'prep_studylab_pending_attempts_v2';
 
   // Release APK download URL
   static const String apkDownloadUrl = '/prep-study-lab.apk';
