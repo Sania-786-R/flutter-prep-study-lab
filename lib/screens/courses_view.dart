@@ -82,10 +82,13 @@ class _CoursesViewState extends State<CoursesView> {
       return q.weekNumber == _selectedWeekTab;
     }).toList();
 
+    final topSafeArea = MediaQuery.of(context).padding.top;
+    final contentTopPadding = topSafeArea + (isDesktop ? 80.0 : 76.0);
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.only(
-        top: 76.0,
+        top: contentTopPadding,
         bottom: 32.0,
         left: isDesktop ? 32.0 : 16.0,
         right: isDesktop ? 32.0 : 16.0,

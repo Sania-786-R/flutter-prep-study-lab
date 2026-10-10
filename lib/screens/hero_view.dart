@@ -26,11 +26,13 @@ class HeroView extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
+    final topSafeArea = MediaQuery.of(context).padding.top;
+    final contentTopPadding = topSafeArea + (isDesktop ? 80.0 : 76.0);
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.only(
-        top: 76.0,
+        top: contentTopPadding,
         bottom: 40.0,
         left: isDesktop ? 48.0 : 20.0,
         right: isDesktop ? 48.0 : 20.0,
@@ -148,6 +150,7 @@ class HeroView extends StatelessWidget {
 
           // Brand Pill
           Container(
+            margin: const EdgeInsets.only(top: 8.0, bottom: 20.0),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white,

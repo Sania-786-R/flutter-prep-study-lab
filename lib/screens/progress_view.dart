@@ -81,11 +81,13 @@ class ProgressView extends StatelessWidget {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 768;
+    final topSafeArea = MediaQuery.of(context).padding.top;
+    final contentTopPadding = topSafeArea + (isDesktop ? 80.0 : 76.0);
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.only(
-        top: 76.0,
+        top: contentTopPadding,
         bottom: 32.0,
         left: isDesktop ? 32.0 : 16.0,
         right: isDesktop ? 32.0 : 16.0,
