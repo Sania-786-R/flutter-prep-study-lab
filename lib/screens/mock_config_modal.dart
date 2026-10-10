@@ -106,10 +106,12 @@ class _MockConfigModalState extends State<MockConfigModal> {
             children: [
               // Header
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
@@ -117,31 +119,29 @@ class _MockConfigModalState extends State<MockConfigModal> {
                             color: AppColors.primarySoft,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Icon(Icons.tune, color: AppColors.primary, size: 20),
+                          child: const Icon(Icons.tune, color: AppColors.primary, size: 22),
                         ),
                         const SizedBox(width: 12),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'CONFIGURE TEST SIMULATION',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                  color: AppColors.primary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
                               Text(
-                                'Customize Your Session',
-                                style: GoogleFonts.playfairDisplay(
+                                'CONFIGURE MOCK TEST',
+                                style: TextStyle(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
                                   color: AppColors.textDark,
                                 ),
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Set up your custom practice session',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                             ],
                           ),
@@ -152,26 +152,34 @@ class _MockConfigModalState extends State<MockConfigModal> {
                   IconButton(
                     icon: const Icon(Icons.close, color: AppColors.textMuted),
                     onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               const Divider(color: AppColors.border, height: 1),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               Expanded(
                 child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Course Selector Dropdown
+                      // 1. SELECT TEST
                       const Text(
-                        'DISCIPLINE / COURSE',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                        '1. SELECT TEST',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.background,
                           borderRadius: BorderRadius.circular(14),
@@ -181,12 +189,14 @@ class _MockConfigModalState extends State<MockConfigModal> {
                           child: DropdownButton<String>(
                             value: _selectedCourseId.isNotEmpty ? _selectedCourseId : null,
                             isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textMuted),
                             items: widget.courses.map((c) {
                               return DropdownMenuItem(
                                 value: c.id,
                                 child: Text(
-                                  '${c.code} — ${c.name}',
-                                  style: const TextStyle(fontSize: 13, color: AppColors.textDark),
+                                  '${c.code} — ${c.name} (${_questions.length} questions)',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textDark),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               );
                             }).toList(),
@@ -203,35 +213,85 @@ class _MockConfigModalState extends State<MockConfigModal> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Module / Week Selection Chips (Supports all 11 weeks dynamically)
+                      // 2. SELECT WEEKS
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'SELECT WEEKS / MODULES',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                            '2. SELECT WEEKS',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: AppColors.textMuted,
+                            ),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedWeeks = List.from(availableWeeks);
-                              });
-                            },
-                            child: const Text('Select All', style: TextStyle(fontSize: 11)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${_questions.length} questions',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
 
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: availableWeeks.map((wk) {
+                      // Preset Pills
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildPresetPill('All Weeks', () {
+                              setState(() => _selectedWeeks = List.from(availableWeeks));
+                            }, _selectedWeeks.length == availableWeeks.length && availableWeeks.isNotEmpty),
+                            const SizedBox(width: 6),
+                            _buildPresetPill('Week 1-3', () {
+                              setState(() => _selectedWeeks = availableWeeks.where((w) => w >= 1 && w <= 3).toList());
+                            }, _isPresetActive(availableWeeks, 1, 3)),
+                            const SizedBox(width: 6),
+                            _buildPresetPill('Week 4-6', () {
+                              setState(() => _selectedWeeks = availableWeeks.where((w) => w >= 4 && w <= 6).toList());
+                            }, _isPresetActive(availableWeeks, 4, 6)),
+                            const SizedBox(width: 6),
+                            _buildPresetPill('Week 7-9', () {
+                              setState(() => _selectedWeeks = availableWeeks.where((w) => w >= 7 && w <= 9).toList());
+                            }, _isPresetActive(availableWeeks, 7, 9)),
+                            const SizedBox(width: 6),
+                            _buildPresetPill('Week 10-12', () {
+                              setState(() => _selectedWeeks = availableWeeks.where((w) => w >= 10 && w <= 12).toList());
+                            }, _isPresetActive(availableWeeks, 10, 12)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 3-column Grid of Week Cards
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: availableWeeks.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 2.1,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemBuilder: (context, index) {
+                          final wk = availableWeeks[index];
                           final isSelected = _selectedWeeks.contains(wk);
-                          return FilterChip(
-                            label: Text('Week $wk'),
-                            selected: isSelected,
-                            onSelected: (val) {
+                          final count = _questions.where((q) => q.weekNumber == wk).length;
+
+                          return InkWell(
+                            onTap: () {
                               setState(() {
                                 if (isSelected) {
                                   if (_selectedWeeks.length > 1) {
@@ -243,36 +303,82 @@ class _MockConfigModalState extends State<MockConfigModal> {
                                 }
                               });
                             },
-                            selectedColor: AppColors.primary,
-                            checkmarkColor: Colors.white,
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : AppColors.textDark,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.primarySoft : AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.border,
+                                  width: isSelected ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected ? Icons.check_circle : Icons.circle_outlined,
+                                    size: 15,
+                                    color: isSelected ? AppColors.primary : AppColors.textSubtle,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Week $wk',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: isSelected ? AppColors.primary : AppColors.textDark,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          count > 0 ? '$count Qs' : '0 Qs',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: isSelected ? AppColors.primaryDark : AppColors.textMuted,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
-                        }).toList(),
+                        },
                       ),
                       const SizedBox(height: 20),
 
-                      // Test Mode (Practice vs Exam)
+                      // 3. TEST ENVIRONMENT
                       const Text(
-                        'EXAMINATION MODE',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                        '3. TEST ENVIRONMENT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Builder(builder: (ctx) {
                         final isCompact = MediaQuery.of(ctx).size.width < 500;
                         final practiceCard = _buildModeSelector(
                           title: 'Practice Mode',
-                          description: 'Immediate correctness feedback and learning hints after each selection.',
+                          description: 'Instant feedback, explanations, and hints after each question.',
                           icon: Icons.auto_awesome_outlined,
                           isSelected: _mode == 'practice',
                           onTap: () => setState(() => _mode = 'practice'),
                         );
                         final examCard = _buildModeSelector(
                           title: 'Exam Mode',
-                          description: 'Strict timer simulation. Neutral options with zero correctness revealed.',
+                          description: 'Timed exam conditions, no feedback until completion.',
                           icon: Icons.shield_outlined,
                           isSelected: _mode == 'exam',
                           onTap: () => setState(() => _mode = 'exam'),
@@ -297,16 +403,21 @@ class _MockConfigModalState extends State<MockConfigModal> {
                       }),
                       const SizedBox(height: 20),
 
-                      // Question Count
+                      // 4. QUESTION COUNT
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'QUESTION COUNT',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                            '4. QUESTION COUNT',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: AppColors.textMuted,
+                            ),
                           ),
                           Text(
-                            '$availableCount questions available in selected weeks',
+                            '$availableCount Qs available',
                             style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textSubtle),
                           ),
                         ],
@@ -317,7 +428,7 @@ class _MockConfigModalState extends State<MockConfigModal> {
                         children: [10, 20, 30, 'all'].map((opt) {
                           final isSelected = _questionCount == opt;
                           return ChoiceChip(
-                            label: Text(opt == 'all' ? 'All ($availableCount)' : '$opt Questions'),
+                            label: Text(opt == 'all' ? 'All ($availableCount)' : '$opt Qs'),
                             selected: isSelected,
                             onSelected: (val) {
                               setState(() {
@@ -335,10 +446,10 @@ class _MockConfigModalState extends State<MockConfigModal> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Time Limit
+                      // Time Limit (for Exam Mode)
                       if (_mode == 'exam') ...[
                         const Text(
-                          'TIME LIMIT (MINUTES)',
+                          'TIME LIMIT',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                         ),
                         const SizedBox(height: 8),
@@ -371,35 +482,88 @@ class _MockConfigModalState extends State<MockConfigModal> {
               ),
 
               const SizedBox(height: 16),
-              // Submit button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _isLoading || availableCount == 0
-                      ? null
-                      : () {
-                          final config = MockConfigModel(
-                            courseId: currentCourse.id,
-                            courseName: currentCourse.name,
-                            selectedWeeks: _selectedWeeks,
-                            questionCount: _questionCount,
-                            selectionType: _selectionType,
-                            mode: _mode,
-                            timeLimitMinutes: _mode == 'exam' ? _timeLimitMinutes : 0,
-                          );
-                          Navigator.of(context).pop();
-                          widget.onStartTest(config);
-                        },
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text(_isLoading ? 'Loading Questions...' : 'LAUNCH SIMULATION'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              // Bottom action bar
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textMuted,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _isLoading || availableCount == 0
+                          ? null
+                          : () {
+                              final config = MockConfigModel(
+                                courseId: currentCourse.id,
+                                courseName: currentCourse.name,
+                                selectedWeeks: _selectedWeeks,
+                                questionCount: _questionCount,
+                                selectionType: _selectionType,
+                                mode: _mode,
+                                timeLimitMinutes: _mode == 'exam' ? _timeLimitMinutes : 0,
+                              );
+                              Navigator.of(context).pop();
+                              widget.onStartTest(config);
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _isLoading ? 'LOADING...' : 'START TEST SIMULATION',
+                            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _isPresetActive(List<int> availableWeeks, int start, int end) {
+    final expected = availableWeeks.where((w) => w >= start && w <= end).toList();
+    if (expected.isEmpty || _selectedWeeks.length != expected.length) return false;
+    return expected.every((w) => _selectedWeeks.contains(w));
+  }
+
+  Widget _buildPresetPill(String label, VoidCallback onTap, bool isActive) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : AppColors.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isActive ? AppColors.primary : AppColors.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : AppColors.textDark,
           ),
         ),
       ),

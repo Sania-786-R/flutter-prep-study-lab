@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:prep_study_lab/core/constants/app_constants.dart';
@@ -158,7 +157,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       setState(() {
         _viewingResultAttempt = null;
         _activeSession = session;
-        _activeTabIndex = 2; // Tests tab
+        _activeTabIndex = 1; // Tests tab
       });
     } catch (e) {
       if (mounted) {
@@ -190,7 +189,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     setState(() {
       _viewingResultAttempt = null;
       _activeSession = session;
-      _activeTabIndex = 2; // Tests tab
+      _activeTabIndex = 1; // Tests tab
     });
   }
 
@@ -207,7 +206,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Successfully signed out.'),
+        content: Text('Signed out successfully'),
         backgroundColor: AppColors.primary,
         duration: Duration(seconds: 2),
       ),
@@ -305,11 +304,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
       );
     }
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 768;
-
     void handleTabSelect(int idx) {
-      if ((idx == 2 || idx == 3) && !auth.isAuthenticated) {
+      if ((idx == 1 || idx == 3) && !auth.isAuthenticated) {
         _showAuthModal(
           reasonMessage: 'Sign in with your Registration Number to access your tests and analytics.',
           onAuthenticatedAction: () => setState(() => _activeTabIndex = idx),
@@ -322,17 +318,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final tabViews = [
       HeroView(
         onStartPracticing: () => _openConfigModal(),
-        onViewTests: () => setState(() => _activeTabIndex = 2),
+        onViewTests: () => setState(() => _activeTabIndex = 1),
         totalCourses: testService.courses.length,
         totalQuestions: testService.questions.length,
         canInstallApp: pwa.canInstall,
         onInstallApp: () => pwa.markInstalled(),
         onDownloadApk: () => pwa.downloadApk(),
-      ),
-      CoursesView(
-        courses: testService.courses,
-        testService: testService,
-        onStartCourseTest: (courseId) => _openConfigModal(preselectedCourseId: courseId),
       ),
       TestsView(
         currentUser: auth.currentUser,
@@ -354,6 +345,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
         onRetryAttemptWrong: (att) => _retryWrong(att),
         onLogout: _handleLogout,
       ),
+      CoursesView(
+        courses: testService.courses,
+        testService: testService,
+        onStartCourseTest: (courseId) => _openConfigModal(preselectedCourseId: courseId),
+      ),
       ProgressView(
         currentUser: auth.currentUser,
         progress: testService.calculateProgress(),
@@ -362,173 +358,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ),
     ];
 
-    if (!isDesktop) {
-      // Mobile Shell with Top AppBar and Bottom NavigationBar
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          toolbarHeight: 52,
-          titleSpacing: 12,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.school_outlined, size: 20, color: AppColors.primary),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  'Prep Study Lab',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (testService.isOffline) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.warningSoft,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.wifi_off, size: 10, color: AppColors.warning),
-                      SizedBox(width: 3),
-                      Text('OFFLINE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.warning)),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            if (auth.currentUser != null)
-              PopupMenuButton<String>(
-                tooltip: 'Account',
-                offset: const Offset(0, 45),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.person_outline, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 4),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 80),
-                        child: Text(
-                          auth.currentUser!.name,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'progress',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.bar_chart, size: 18, color: AppColors.primary),
-                        SizedBox(width: 8),
-                        Text('My Analytics'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.logout, size: 18, color: AppColors.error),
-                        SizedBox(width: 8),
-                        Text('Sign Out', style: TextStyle(color: AppColors.error)),
-                      ],
-                    ),
-                  ),
-                ],
-                onSelected: (val) async {
-                  if (val == 'progress') {
-                    setState(() => _activeTabIndex = 3);
-                  } else if (val == 'logout') {
-                    await _handleLogout();
-                  }
-                },
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                child: FilledButton.icon(
-                  onPressed: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to continue.'),
-                  icon: const Icon(Icons.login, size: 14),
-                  label: const Text('Sign In', style: TextStyle(fontSize: 11)),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        body: IndexedStack(
-          index: _activeTabIndex,
-          children: tabViews,
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _activeTabIndex,
-          onDestinationSelected: handleTabSelect,
-          backgroundColor: Colors.white,
-          elevation: 8,
-          indicatorColor: AppColors.primarySoft,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home, color: AppColors.primary),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.menu_book_outlined),
-              selectedIcon: Icon(Icons.menu_book, color: AppColors.primary),
-              label: 'Courses',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.description_outlined),
-              selectedIcon: Icon(Icons.description, color: AppColors.primary),
-              label: 'Tests',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined),
-              selectedIcon: Icon(Icons.bar_chart, color: AppColors.primary),
-              label: 'Progress',
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Desktop/Tablet Shell with floating dock navigation
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           IndexedStack(

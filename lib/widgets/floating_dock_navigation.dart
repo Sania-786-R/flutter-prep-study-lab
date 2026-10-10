@@ -22,10 +22,13 @@ class FloatingDockNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 600;
+
     final navItems = [
       {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-      {'label': 'Courses', 'icon': Icons.menu_book_outlined, 'activeIcon': Icons.menu_book},
       {'label': 'Tests', 'icon': Icons.description_outlined, 'activeIcon': Icons.description},
+      {'label': 'Courses', 'icon': Icons.menu_book_outlined, 'activeIcon': Icons.menu_book},
       {'label': 'Progress', 'icon': Icons.bar_chart_outlined, 'activeIcon': Icons.bar_chart},
     ];
 
@@ -59,7 +62,10 @@ class FloatingDockNavigation extends StatelessWidget {
                     borderRadius: BorderRadius.circular(40),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 9.0 : 14.0,
+                        vertical: 7.0,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primarySoft : Colors.transparent,
                         borderRadius: BorderRadius.circular(40),
@@ -73,7 +79,7 @@ class FloatingDockNavigation extends StatelessWidget {
                             size: 18,
                             color: isSelected ? AppColors.primary : AppColors.textMuted,
                           ),
-                          if (isSelected) ...[
+                          if (isSelected && !isCompact) ...[
                             const SizedBox(width: 6),
                             Text(
                               item['label'] as String,
@@ -124,21 +130,37 @@ class FloatingDockNavigation extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                   ),
                 ] else ...[
-                  FilledButton.icon(
-                    onPressed: onOpenAuth,
-                    icon: const Icon(Icons.person_outline, size: 14),
-                    label: const Text(
-                      'SIGN IN',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                  if (isCompact)
+                    InkWell(
+                      onTap: onOpenAuth,
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.primarySoft,
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: const Icon(Icons.person_outline, size: 16, color: AppColors.primary),
+                      ),
+                    )
+                  else
+                    FilledButton.icon(
+                      onPressed: onOpenAuth,
+                      icon: const Icon(Icons.person_outline, size: 14),
+                      label: const Text(
+                        'SIGN IN',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
                     ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    ),
-                  ),
                 ],
               ],
             ),

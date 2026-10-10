@@ -24,7 +24,7 @@ class ProgressView extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 64.0),
+            padding: const EdgeInsets.only(top: 88.0, bottom: 40.0, left: 24.0, right: 24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -84,14 +84,15 @@ class ProgressView extends StatelessWidget {
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 32.0 : 16.0,
-        vertical: 20.0,
+      padding: EdgeInsets.only(
+        top: 76.0,
+        bottom: 32.0,
+        left: isDesktop ? 32.0 : 16.0,
+        right: isDesktop ? 32.0 : 16.0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isDesktop) const SizedBox(height: 52),
 
           // Header
           Text(

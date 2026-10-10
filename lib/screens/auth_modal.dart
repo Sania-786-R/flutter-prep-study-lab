@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:prep_study_lab/core/constants/app_constants.dart';
 import 'package:prep_study_lab/models/models.dart';
 import 'package:prep_study_lab/services/auth_service.dart';
@@ -136,10 +135,12 @@ class _AuthModalState extends State<AuthModal> {
               children: [
                 // Header
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
@@ -150,7 +151,7 @@ class _AuthModalState extends State<AuthModal> {
                             child: Icon(
                               _mode == 'login' ? Icons.lock_outline : Icons.person_add_outlined,
                               color: AppColors.primary,
-                              size: 20,
+                              size: 22,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -161,20 +162,22 @@ class _AuthModalState extends State<AuthModal> {
                                 Text(
                                   _mode == 'login' ? 'SIGN IN' : 'CREATE ACCOUNT',
                                   style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                Text(
-                                  _mode == 'login' ? 'Welcome Back' : 'Student Registration',
-                                  style: GoogleFonts.playfairDisplay(
                                     fontSize: 18,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
                                     color: AppColors.textDark,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _mode == 'login'
+                                      ? 'Enter your registration number and password to continue (new students register automatically)'
+                                      : 'Register with your student details to track progress across devices',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textMuted,
+                                    height: 1.35,
+                                  ),
                                 ),
                               ],
                             ),
@@ -190,24 +193,36 @@ class _AuthModalState extends State<AuthModal> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                if (widget.reasonMessage != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      widget.reasonMessage!,
-                      style: const TextStyle(fontSize: 12, color: AppColors.primaryDark, height: 1.3),
-                    ),
+                // Info Banner
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
-                  const SizedBox(height: 14),
-                ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          widget.reasonMessage ??
+                              'Sign in or create an account to track your progress and tests.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primaryDark,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 if (_error != null) ...[
                   Container(
@@ -215,8 +230,7 @@ class _AuthModalState extends State<AuthModal> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.errorSoft,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       _error!,
@@ -227,15 +241,36 @@ class _AuthModalState extends State<AuthModal> {
                 ],
 
                 // Registration number / Name field
+                const Text(
+                  'REGISTRATION NUMBER',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 TextField(
                   controller: _regController,
                   autocorrect: false,
                   enableSuggestions: false,
                   decoration: InputDecoration(
-                    labelText: 'Name or Registration Number',
-                    hintText: 'e.g. 2026AIML001 or Student ID',
-                    prefixIcon: const Icon(Icons.badge_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    hintText: 'Enter registration number',
+                    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSubtle),
+                    prefixIcon: const Icon(Icons.person_outline, size: 20, color: AppColors.textMuted),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
                     filled: true,
                     fillColor: AppColors.background,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -244,16 +279,37 @@ class _AuthModalState extends State<AuthModal> {
                 const SizedBox(height: 14),
 
                 // Password field
+                Text(
+                  _mode == 'signup' ? 'NEW PASSWORD' : 'PASSWORD',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 TextField(
                   controller: _passController,
                   obscureText: true,
                   autocorrect: false,
                   enableSuggestions: false,
                   decoration: InputDecoration(
-                    labelText: _mode == 'signup' ? 'New Password' : 'Password',
-                    hintText: 'At least 6 characters',
-                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    hintText: 'Enter password',
+                    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSubtle),
+                    prefixIcon: const Icon(Icons.lock_outline, size: 20, color: AppColors.textMuted),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
                     filled: true,
                     fillColor: AppColors.background,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -263,16 +319,37 @@ class _AuthModalState extends State<AuthModal> {
 
                 // Confirm password field (signup only)
                 if (_mode == 'signup') ...[
+                  const Text(
+                    'CONFIRM PASSWORD',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _confirmPassController,
                     obscureText: true,
                     autocorrect: false,
                     enableSuggestions: false,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
                       hintText: 'Re-enter your password',
-                      prefixIcon: const Icon(Icons.lock_reset, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSubtle),
+                      prefixIcon: const Icon(Icons.lock_reset, size: 20, color: AppColors.textMuted),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                      ),
                       filled: true,
                       fillColor: AppColors.background,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -307,9 +384,16 @@ class _AuthModalState extends State<AuthModal> {
                               ),
                             ],
                           )
-                        : Text(
-                            _mode == 'signup' ? 'CREATE ACCOUNT' : 'SIGN IN & CONTINUE',
-                            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _mode == 'signup' ? 'CREATE ACCOUNT' : 'SIGN IN & CONTINUE',
+                                style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward, size: 16),
+                            ],
                           ),
                   ),
                 ),
