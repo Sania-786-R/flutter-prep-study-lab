@@ -491,12 +491,15 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    try {
-      await _supabase.auth.signOut();
-    } catch (_) {}
     _currentUser = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConstants.keyUserSession);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.keyUserSession);
+    } catch (_) {}
     notifyListeners();
+
+    try {
+      await _supabase.auth.signOut().timeout(const Duration(seconds: 3), onTimeout: () {});
+    } catch (_) {}
   }
 }

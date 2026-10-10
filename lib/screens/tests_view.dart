@@ -15,6 +15,7 @@ class TestsView extends StatelessWidget {
   final Function(ActiveTestSessionModel) onResumeTest;
   final Function(MockAttemptModel) onViewAttemptResult;
   final Function(MockAttemptModel) onRetryAttemptWrong;
+  final VoidCallback? onLogout;
 
   const TestsView({
     super.key,
@@ -27,6 +28,7 @@ class TestsView extends StatelessWidget {
     required this.onResumeTest,
     required this.onViewAttemptResult,
     required this.onRetryAttemptWrong,
+    this.onLogout,
   });
 
   String _formatDuration(int seconds) {
@@ -137,7 +139,7 @@ class TestsView extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${currentUser!.name}'s Dashboard",
+                        'Welcome back, ${currentUser!.name}',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 26,
                           fontWeight: FontWeight.normal,
@@ -157,6 +159,19 @@ class TestsView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
+                if (onLogout != null) ...[
+                  OutlinedButton.icon(
+                    onPressed: onLogout,
+                    icon: const Icon(Icons.logout, size: 14, color: AppColors.error),
+                    label: const Text('SIGN OUT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 FilledButton.icon(
                   onPressed: onOpenConfig,
                   icon: const Icon(Icons.tune, size: 16),
@@ -173,18 +188,44 @@ class TestsView extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'ACADEMIC SUITE',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2.0,
-                    color: AppColors.primary,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'ACADEMIC SUITE',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.0,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    if (onLogout != null)
+                      InkWell(
+                        onTap: onLogout,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorSoft,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.logout, size: 12, color: AppColors.error),
+                              SizedBox(width: 4),
+                              Text('SIGN OUT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.error)),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  "${currentUser!.name}'s Dashboard",
+                  'Welcome back, ${currentUser!.name}',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 22,
                     fontWeight: FontWeight.normal,
@@ -219,16 +260,29 @@ class TestsView extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Performance Metrics Grid
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _buildMetricCard('Tests Taken', '${progress.testsCompleted}', 'Completed sessions', Icons.description_outlined, AppColors.primary),
-              _buildMetricCard('Attempted', '${progress.totalAttempted}', 'Questions answered', Icons.track_changes, AppColors.primary),
-              _buildMetricCard('Correct', '${progress.totalCorrect}', 'Confirmed answers', Icons.check_circle_outline, AppColors.success),
-              _buildMetricCard('Accuracy', '${progress.accuracy}%', 'Overall rate', Icons.trending_up, AppColors.primary),
-              _buildMetricCard('Best Score', '${progress.bestScore}', 'Top marks reached', Icons.emoji_events_outlined, AppColors.warning),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final avail = constraints.maxWidth;
+              final cardWidth = avail > 750
+                  ? (avail - 48) / 5
+                  : (avail > 500
+                      ? (avail - 24) / 3
+                      : (avail > 320
+                          ? (avail - 12) / 2
+                          : avail));
+
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _buildMetricCard('Tests Taken', '${progress.testsCompleted}', 'Completed sessions', Icons.description_outlined, AppColors.primary, cardWidth),
+                  _buildMetricCard('Attempted', '${progress.totalAttempted}', 'Questions answered', Icons.track_changes, AppColors.primary, cardWidth),
+                  _buildMetricCard('Correct', '${progress.totalCorrect}', 'Confirmed answers', Icons.check_circle_outline, AppColors.success, cardWidth),
+                  _buildMetricCard('Accuracy', '${progress.accuracy}%', 'Overall rate', Icons.trending_up, AppColors.primary, cardWidth),
+                  _buildMetricCard('Best Score', '${progress.bestScore}', 'Top marks reached', Icons.emoji_events_outlined, AppColors.warning, cardWidth),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 24),
 
@@ -350,113 +404,238 @@ class TestsView extends StatelessWidget {
                 final isExam = att.mode == 'exam';
                 final hasWrongs = att.wrongCount > 0;
 
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.03), blurRadius: 10),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
+                return LayoutBuilder(
+                  builder: (context, cardConstraints) {
+                    final isNarrow = cardConstraints.maxWidth < 460;
+                    if (isNarrow) {
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.border),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.primary.withValues(alpha: 0.03), blurRadius: 10),
+                          ],
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isExam ? AppColors.errorSoft : AppColors.primarySoft,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: isExam ? AppColors.error.withValues(alpha: 0.3) : AppColors.border),
-                                  ),
-                                  child: Text(
-                                    att.mode.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isExam ? AppColors.error : AppColors.primary,
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isExam ? AppColors.errorSoft : AppColors.primarySoft,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: isExam ? AppColors.error.withValues(alpha: 0.3) : AppColors.border),
+                                      ),
+                                      child: Text(
+                                        att.mode.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: isExam ? AppColors.error : AppColors.primary,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatDate(att.completedAt),
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textMuted),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _formatDate(att.completedAt),
-                                  style: GoogleFonts.jetBrainsMono(fontSize: 11, color: AppColors.textMuted),
+                                Row(
+                                  children: [
+                                    Text.rich(
+                                      TextSpan(
+                                        text: '${att.score}',
+                                        style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.normal, color: AppColors.textDark),
+                                        children: [
+                                          TextSpan(text: ' / ${att.totalQuestions}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: att.percentage >= 75 ? AppColors.successSoft : AppColors.warningSoft,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${att.percentage}%',
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: att.percentage >= 75 ? AppColors.success : AppColors.warning,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Text(
                               att.courseName,
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
                             ),
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 12,
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('${att.correctCount} Correct', style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600)),
-                                Text('${att.wrongCount} Wrong', style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600)),
-                                Text(_formatDuration(att.timeTakenSeconds), style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                                Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    Text('${att.correctCount} Correct', style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600)),
+                                    Text('${att.wrongCount} Wrong', style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600)),
+                                    Text(_formatDuration(att.timeTakenSeconds), style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    if (hasWrongs)
+                                      IconButton(
+                                        icon: const Icon(Icons.refresh, size: 18, color: AppColors.error),
+                                        onPressed: () => onRetryAttemptWrong(att),
+                                        tooltip: 'Retry incorrect questions',
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    OutlinedButton.icon(
+                                      onPressed: () => onViewAttemptResult(att),
+                                      icon: const Icon(Icons.visibility_outlined, size: 13),
+                                      label: const Text('RESULT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primary,
+                                        side: const BorderSide(color: AppColors.border),
+                                        visualDensity: VisualDensity.compact,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ],
                         ),
+                      );
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(color: AppColors.primary.withValues(alpha: 0.03), blurRadius: 10),
+                        ],
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      child: Row(
                         children: [
-                          Text.rich(
-                            TextSpan(
-                              text: '${att.score}',
-                              style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.normal, color: AppColors.textDark),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                TextSpan(text: ' / ${att.totalQuestions}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isExam ? AppColors.errorSoft : AppColors.primarySoft,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: isExam ? AppColors.error.withValues(alpha: 0.3) : AppColors.border),
+                                      ),
+                                      child: Text(
+                                        att.mode.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: isExam ? AppColors.error : AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatDate(att.completedAt),
+                                      style: GoogleFonts.jetBrainsMono(fontSize: 11, color: AppColors.textMuted),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  att.courseName,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                                ),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 12,
+                                  children: [
+                                    Text('${att.correctCount} Correct', style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600)),
+                                    Text('${att.wrongCount} Wrong', style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600)),
+                                    Text(_formatDuration(att.timeTakenSeconds), style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
-                          Text(
-                            '${att.percentage}%',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: att.percentage >= 75 ? AppColors.primary : AppColors.warning,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              if (hasWrongs) ...[
-                                IconButton(
-                                  icon: const Icon(Icons.refresh, size: 18, color: AppColors.error),
-                                  onPressed: () => onRetryAttemptWrong(att),
-                                  tooltip: 'Retry incorrect questions',
-                                  visualDensity: VisualDensity.compact,
+                              Text.rich(
+                                TextSpan(
+                                  text: '${att.score}',
+                                  style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.normal, color: AppColors.textDark),
+                                  children: [
+                                    TextSpan(text: ' / ${att.totalQuestions}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+                                  ],
                                 ),
-                              ],
-                              OutlinedButton.icon(
-                                onPressed: () => onViewAttemptResult(att),
-                                icon: const Icon(Icons.visibility_outlined, size: 14),
-                                label: const Text('RESULT'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.primary,
-                                  side: const BorderSide(color: AppColors.border),
-                                  visualDensity: VisualDensity.compact,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                              Text(
+                                '${att.percentage}%',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: att.percentage >= 75 ? AppColors.primary : AppColors.warning,
                                 ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  if (hasWrongs) ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.refresh, size: 18, color: AppColors.error),
+                                      onPressed: () => onRetryAttemptWrong(att),
+                                      tooltip: 'Retry incorrect questions',
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ],
+                                  OutlinedButton.icon(
+                                    onPressed: () => onViewAttemptResult(att),
+                                    icon: const Icon(Icons.visibility_outlined, size: 14),
+                                    label: const Text('RESULT'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: const BorderSide(color: AppColors.border),
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -467,10 +646,10 @@ class TestsView extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, String subtitle, IconData icon, Color color) {
+  Widget _buildMetricCard(String title, String value, String subtitle, IconData icon, Color color, double width) {
     return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
+      width: width,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -482,14 +661,26 @@ class TestsView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
               Icon(icon, size: 16, color: color),
             ],
           ),
           const SizedBox(height: 8),
           Text(value, style: GoogleFonts.playfairDisplay(fontSize: 24, color: color, fontWeight: FontWeight.normal)),
           const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.textSubtle)),
+          Text(
+            subtitle,
+            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.textSubtle),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

@@ -230,7 +230,7 @@ class _AuthModalState extends State<AuthModal> {
                   enableSuggestions: false,
                   decoration: InputDecoration(
                     labelText: 'Name or Registration Number',
-                    hintText: 'e.g. HAFI, 2026AIML001, or Student ID',
+                    hintText: 'e.g. 2026AIML001 or Student ID',
                     prefixIcon: const Icon(Icons.badge_outlined, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                     filled: true,

@@ -24,8 +24,8 @@ class FloatingDockNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final navItems = [
       {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-      {'label': 'Tests', 'icon': Icons.description_outlined, 'activeIcon': Icons.description},
       {'label': 'Courses', 'icon': Icons.menu_book_outlined, 'activeIcon': Icons.menu_book},
+      {'label': 'Tests', 'icon': Icons.description_outlined, 'activeIcon': Icons.description},
       {'label': 'Progress', 'icon': Icons.bar_chart_outlined, 'activeIcon': Icons.bar_chart},
     ];
 

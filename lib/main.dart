@@ -138,7 +138,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       setState(() {
         _viewingResultAttempt = null;
         _activeSession = session;
-        _activeTabIndex = 1; // Tests tab
+        _activeTabIndex = 2; // Tests tab
       });
     } catch (e) {
       if (mounted) {
@@ -170,8 +170,28 @@ class _MainShellScreenState extends State<MainShellScreen> {
     setState(() {
       _viewingResultAttempt = null;
       _activeSession = session;
-      _activeTabIndex = 1;
+      _activeTabIndex = 2; // Tests tab
     });
+  }
+
+  Future<void> _handleLogout() async {
+    final auth = context.read<AuthService>();
+    final testService = context.read<TestService>();
+    await auth.logout();
+    testService.clearUserData();
+    if (!mounted) return;
+    setState(() {
+      _activeTabIndex = 0;
+      _activeSession = null;
+      _viewingResultAttempt = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Successfully signed out.'),
+        backgroundColor: AppColors.primary,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -269,7 +289,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final isDesktop = screenWidth >= 768;
 
     void handleTabSelect(int idx) {
-      if ((idx == 1 || idx == 3) && !auth.isAuthenticated) {
+      if ((idx == 2 || idx == 3) && !auth.isAuthenticated) {
         _showAuthModal(
           reasonMessage: 'Sign in with your Registration Number to access your tests and analytics.',
           onAuthenticatedAction: () => setState(() => _activeTabIndex = idx),
@@ -282,12 +302,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final tabViews = [
       HeroView(
         onStartPracticing: () => _openConfigModal(),
-        onViewTests: () => setState(() => _activeTabIndex = 1),
+        onViewTests: () => setState(() => _activeTabIndex = 2),
         totalCourses: testService.courses.length,
         totalQuestions: testService.questions.length,
         canInstallApp: pwa.canInstall,
         onInstallApp: () => pwa.markInstalled(),
         onDownloadApk: () => pwa.downloadApk(),
+      ),
+      CoursesView(
+        courses: testService.courses,
+        testService: testService,
+        onStartCourseTest: (courseId) => _openConfigModal(preselectedCourseId: courseId),
       ),
       TestsView(
         currentUser: auth.currentUser,
@@ -307,11 +332,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           });
         },
         onRetryAttemptWrong: (att) => _retryWrong(att),
-      ),
-      CoursesView(
-        courses: testService.courses,
-        testService: testService,
-        onStartCourseTest: (courseId) => _openConfigModal(preselectedCourseId: courseId),
+        onLogout: _handleLogout,
       ),
       ProgressView(
         currentUser: auth.currentUser,
@@ -425,8 +446,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   if (val == 'progress') {
                     setState(() => _activeTabIndex = 3);
                   } else if (val == 'logout') {
-                    await auth.logout();
-                    setState(() => _activeTabIndex = 0);
+                    await _handleLogout();
                   }
                 },
               )
@@ -463,14 +483,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
               label: 'Home',
             ),
             NavigationDestination(
-              icon: Icon(Icons.description_outlined),
-              selectedIcon: Icon(Icons.description, color: AppColors.primary),
-              label: 'Tests',
-            ),
-            NavigationDestination(
               icon: Icon(Icons.menu_book_outlined),
               selectedIcon: Icon(Icons.menu_book, color: AppColors.primary),
               label: 'Courses',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.description_outlined),
+              selectedIcon: Icon(Icons.description, color: AppColors.primary),
+              label: 'Tests',
             ),
             NavigationDestination(
               icon: Icon(Icons.bar_chart_outlined),
@@ -495,12 +515,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             currentUser: auth.currentUser,
             onTabSelected: handleTabSelect,
             onOpenAuth: () => _showAuthModal(reasonMessage: 'Sign in with your Registration Number to continue.'),
-            onLogout: () async {
-              await auth.logout();
-              setState(() {
-                _activeTabIndex = 0;
-              });
-            },
+            onLogout: _handleLogout,
             onNameClick: () {
               if (auth.isAuthenticated) {
                 setState(() => _activeTabIndex = 3);

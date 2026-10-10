@@ -691,4 +691,11 @@ class TestService extends ChangeNotifier {
       weekWise: weekWise,
     );
   }
+
+  // Clear user-specific attempts and session upon logout
+  void clearUserData() {
+    _attempts = [];
+    _activeSession = null;
+    notifyListeners();
+  }
 }
